@@ -1,0 +1,69 @@
+<!-- @dsCard group="Backoffice" viewport="1380x760" subtitle="Очередь заявок и QA" name="Диспетчер и QA" -->
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><title>Backoffice — Память рядом</title></head>
+<body style="display:flex;min-height:100vh;">
+<aside style="width:220px;background:var(--surface);border-right:1px solid var(--border);padding:24px 0;flex-shrink:0;">
+  <div style="font-family:var(--font-display);font-size:17px;letter-spacing:0.04em;padding:0 24px 24px;">Память рядом</div>
+  <nav style="display:flex;flex-direction:column;">
+    <span style="padding:11px 24px;font-size:14px;font-weight:700;background:var(--accent-soft);color:var(--accent-deep);border-right:2px solid var(--accent);">Заявки</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">Календарь</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">QA-очередь</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">Исполнители</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">Финансы</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">Обращения</span>
+    <span style="padding:11px 24px;font-size:14px;color:var(--ink-2);">Справочники</span>
+  </nav>
+  <div style="margin:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-3);">Диспетчер · Мария К.<br>MFA активна</div>
+</aside>
+<main style="flex:1;padding:28px 32px;min-width:0;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;">
+    <h1 style="font-family:var(--font-display);font-weight:400;font-size:26px;margin:0;">Очередь заявок</h1>
+    <div style="display:flex;gap:16px;font-size:13px;color:var(--ink-2);">
+      <span>Новые: <b>7</b></span><span>Просрочка SLA: <b style="color:var(--danger);">2</b></span><span>QA: <b>4</b></span>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:600;border-radius:999px;padding:7px 14px;">Все · 23</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Проверка локации · 5</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Ждут смету · 6</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Назначение · 8</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Риск-флаги · 4</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow-x:auto;margin-bottom:24px;">
+    <div style="display:grid;min-width:1000px;grid-template-columns:90px 1fr 170px 130px 150px 120px;gap:12px;padding:12px 20px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--border);">
+      <span>Заказ</span><span>Услуга и место</span><span>Статус</span><span>SLA</span><span>Исполнитель</span><span>Сумма</span>
+    </div>
+    <div style="display:grid;min-width:1000px;grid-template-columns:90px 1fr 170px 130px 150px 120px;gap:12px;padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border);align-items:center;">
+      <span style="font-weight:700;">2431</span><span>Осмотр · Северное, зона 3 <span style="background:var(--warning-soft);color:var(--warning);font-size:11px;font-weight:600;border-radius:999px;padding:3px 8px;margin-left:6px;">локация не подтверждена</span></span><span><span style="background:var(--paper);border:1px solid var(--border-strong);color:var(--ink-2);font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px;">LOCATION_REVIEW</span></span><span style="color:var(--danger);font-weight:600;">осталось 3 ч</span><span style="color:var(--ink-3);">—</span><span>—</span>
+    </div>
+    <div style="display:grid;min-width:1000px;grid-template-columns:90px 1fr 170px 130px 150px 120px;gap:12px;padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border);align-items:center;">
+      <span style="font-weight:700;">2429</span><span>Базовый уход · Смоленское, 14-3</span><span><span style="background:var(--info-soft);color:var(--info);font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px;">ASSIGNING</span></span><span>до завтра, 12:00</span><span style="color:var(--ink-3);">предложено А. О.</span><span>12 640 ₽</span>
+    </div>
+    <div style="display:grid;min-width:1000px;grid-template-columns:90px 1fr 170px 130px 150px 120px;gap:12px;padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border);align-items:center;">
+      <span style="font-weight:700;">2418</span><span>Базовый уход · Смоленское, 14-3</span><span><span style="background:var(--accent-soft);color:var(--accent-deep);font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px;">IN_PROGRESS</span></span><span>в норме</span><span>Игорь С.</span><span>12 640 ₽</span>
+    </div>
+    <div style="display:grid;min-width:1000px;grid-template-columns:90px 1fr 170px 130px 150px 120px;gap:12px;padding:14px 20px;font-size:13px;align-items:center;">
+      <span style="font-weight:700;">2402</span><span>Сезонный уход · Южное, 7-1</span><span><span style="background:var(--info-soft);color:var(--info);font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px;">QA_REVIEW</span></span><span>до 18:00</span><span>Пётр Н.</span><span>8 400 ₽</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:22px;">
+      <div style="font-size:12px;letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;">QA · заказ 2402 · сравнение ракурса</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <div style="flex:1;"><div style="aspect-ratio:4/3;background:#E9E1D4;border-radius:4px;display:grid;place-items:center;font-size:12px;color:var(--ink-3);">до</div></div>
+        <div style="flex:1;"><div style="aspect-ratio:4/3;background:var(--accent-soft);border-radius:4px;display:grid;place-items:center;font-size:12px;color:var(--ink-3);">после</div></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button style="flex:1;background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:11px;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;">Принять</button>
+        <button style="flex:1;background:none;border:1px solid var(--border-strong);border-radius:999px;padding:11px;font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--ink-1);cursor:pointer;">Вернуть с причиной</button>
+        <button style="flex:1;background:none;border:1px solid var(--danger);border-radius:999px;padding:11px;font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--danger);cursor:pointer;">Эскалировать</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:22px;">
+      <div style="font-size:12px;letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;">Назначение · заказ 2429</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span><b>Алексей О.</b> · зона 14 · свободен 19–21</span><button style="background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:8px 18px;font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;">Предложить</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>Игорь С. · зона 14 · <span style="color:var(--warning);">занят 19–20</span></span><button style="background:none;border:1px solid var(--border-strong);border-radius:999px;padding:8px 18px;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--ink-2);cursor:pointer;">Override</button></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:12px;">Override требует причину — действие попадёт в журнал аудита.</div>
+    </div>
+  </div>
+</main>
+</body></html>

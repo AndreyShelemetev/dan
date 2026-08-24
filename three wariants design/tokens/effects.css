@@ -1,0 +1,14 @@
+:root {
+  --radius-card: 4px;      /* карточки, поля, таблицы */
+  --radius-input: 4px;
+  --radius-button: 999px;  /* кнопки — pill */
+  --radius-pill: 999px;    /* бейджи, метки */
+  --radius-modal: 6px;
+
+  --shadow-card: 0 1px 2px rgba(43, 47, 43, 0.05);
+  --shadow-raised: 0 6px 20px rgba(43, 47, 43, 0.08);
+  --shadow-modal: 0 16px 48px rgba(43, 47, 43, 0.16);
+
+  --ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+  --duration: 160ms; /* сдержанные переходы: opacity и цвет, без bounce */
+}

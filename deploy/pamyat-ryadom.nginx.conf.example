@@ -1,0 +1,51 @@
+# Host nginx server block for pamyat-ryadom.ru — routes the domain to the
+# containers published on 127.0.0.1 by docker-compose.prod.yml.
+#
+# PLACEHOLDER DOMAIN: "pamyat-ryadom.ru" below is a placeholder — replace every
+# occurrence with the real production domain before deploying.
+#
+# Put in /etc/nginx/sites-available/pamyat-ryadom.ru and symlink into
+# sites-enabled, then run certbot with BOTH domains so it adds TLS (listen 443)
+# to both blocks:
+#   certbot --nginx -d pamyat-ryadom.ru -d www.pamyat-ryadom.ru
+
+# SEO: one canonical host. 301 www → non-www so Google doesn't index www duplicates
+# ("Alternate page with proper canonical tag"). certbot adds the 443 listen + cert here too.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name www.pamyat-ryadom.ru;
+    return 301 https://pamyat-ryadom.ru$request_uri;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name pamyat-ryadom.ru;
+
+    client_max_body_size 10m;
+
+    # Backend API (api container on 127.0.0.1:${API_PORT}, see .env — default 5100)
+    location /api/ {
+        proxy_pass http://127.0.0.1:5100/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Generous timeout for slow requests (e.g. visit-report photo/video
+        # uploads) — don't let nginx cut them at the default 60s.
+        proxy_read_timeout 180s;
+        proxy_send_timeout 180s;
+    }
+
+    # Next.js frontend (frontend container on 127.0.0.1:${FRONTEND_PORT}, see .env — default 3100)
+    location / {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

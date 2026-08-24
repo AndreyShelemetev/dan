@@ -1,0 +1,23 @@
+# Production override for deploying alongside other dockerized projects.
+# Use EXPLICIT files so the dev override (docker-compose.override.yml) is NOT
+# auto-loaded (it enables Development + Adminer):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Host-port bindings come from .env — bind them to 127.0.0.1 by putting the IP
+# in the value (e.g. FRONTEND_PORT=127.0.0.1:3100). A host reverse proxy (nginx)
+# terminates TLS and routes the domain to the frontend, and /api to the api container.
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+  frontend:
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}

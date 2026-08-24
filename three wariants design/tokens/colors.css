@@ -1,0 +1,35 @@
+:root {
+  /* Базовые поверхности — направление A «Тихий сад» */
+  --paper: #F5F3EE;            /* фон страницы */
+  --surface: #FBFAF6;          /* карточки, панели */
+  --surface-raised: #FFFFFF;   /* модальные окна, всплывающие слои */
+  --border: #E3DFD4;
+  --border-strong: #C9C4B6;
+
+  /* Текст */
+  --ink-1: #2B2F2B;            /* основной */
+  --ink-2: #5A5F58;            /* вторичный */
+  --ink-3: #8A8F87;            /* подписи, мета */
+  --ink-inverse: #FBFAF6;
+
+  /* Акцент — приглушённый зелёный */
+  --accent: #4A6151;
+  --accent-hover: #3C5142;
+  --accent-deep: #33473A;
+  --accent-soft: #E9EDE7;
+  --on-accent: #FBFAF6;
+
+  /* Семантика — намеренно приглушённая: без агрессивного красного */
+  --success: #3C6144;   --success-soft: #E7EEE7;
+  --info: #41586E;      --info-soft: #E6EBF0;
+  --warning: #8F6B2E;   --warning-soft: #F3ECDA;
+  --danger: #8C4A3F;    --danger-soft: #F2E3DF;
+
+  /* Семантические алиасы */
+  --surface-page: var(--paper);
+  --surface-card: var(--surface);
+  --text-body: var(--ink-1);
+  --text-muted: var(--ink-2);
+  --text-caption: var(--ink-3);
+  --focus-ring: 0 0 0 3px rgba(74, 97, 81, 0.28);
+}

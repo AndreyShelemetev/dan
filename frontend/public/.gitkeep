@@ -1,0 +1,3 @@
+# Next.js static asset root (favicon, og images, robots.txt).
+# Kept in git even while empty: frontend/Dockerfile copies /app/public into the
+# runtime stage, and the build fails outright if the directory is missing.

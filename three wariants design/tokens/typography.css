@@ -1,0 +1,19 @@
+:root {
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-ui: "Manrope", "Segoe UI", Arial, sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+  --text-3xl: 46px;
+
+  --leading-tight: 1.15;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-caps: 0.18em; /* надзаголовки — uppercase, ink-3 */
+}

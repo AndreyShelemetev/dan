@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ${STACK:-pamyat-ryadom}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pamyat-ryadom
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/PamyatRyadom.Api/Dockerfile
+    container_name: ${STACK:-pamyat-ryadom}-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # Frontend origin allowed by CORS — see Program.cs. Defaults to the local dev frontend.
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3100}
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    networks:
+      - pamyat-ryadom
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Browser-facing URLs, baked into the client bundle at build time. In production set
+        # PUBLIC_API_URL / PUBLIC_SITE_URL to the public domain. Do NOT derive these from
+        # ${API_PORT}/${FRONTEND_PORT}: they may hold a bind address (e.g. 127.0.0.1:3100).
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:5100/api/v1}
+        NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3100}
+    container_name: ${STACK:-pamyat-ryadom}-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:5100/api/v1}
+      NEXT_PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3100}
+      # Server-side (Server Components / layouts) address of the API. The public
+      # URL above points at the host, which from inside this container is the
+      # container itself — see lib/api/client.ts#getBaseUrl.
+      API_INTERNAL_URL: http://api:8080/api/v1
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      # 127.0.0.1, not localhost: the Next.js standalone server listens on IPv4
+      # only (0.0.0.0:3000), while busybox wget resolves "localhost" to ::1 first
+      # and gets connection-refused — the container would never report healthy.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - pamyat-ryadom
+
+volumes:
+  postgres_data:
+
+networks:
+  pamyat-ryadom:
+    driver: bridge

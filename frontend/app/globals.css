@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — direction A «Тихий сад».
+ *
+ * Mirrors `three wariants design/tokens/*.css` one-for-one. Tailwind reads the
+ * same values from tailwind.config.js; these custom properties exist so
+ * non-Tailwind surfaces (base element styles, the focus ring, third-party
+ * widgets, e-mail-ish embedded markup) can reach the same palette.
+ */
+@layer base {
+  :root {
+    /* Surfaces */
+    --paper: #f5f3ee;
+    --surface: #fbfaf6;
+    --surface-raised: #ffffff;
+    --border: #e3dfd4;
+    --border-strong: #c9c4b6;
+
+    /* Text */
+    --ink-1: #2b2f2b;
+    --ink-2: #5a5f58;
+    --ink-3: #8a8f87;
+    --ink-inverse: #fbfaf6;
+
+    /* Accent — muted green */
+    --accent: #4a6151;
+    --accent-hover: #3c5142;
+    --accent-deep: #33473a;
+    --accent-soft: #e9ede7;
+    --on-accent: #fbfaf6;
+
+    /* Semantics — deliberately muted, no alarm red */
+    --success: #3c6144;
+    --success-soft: #e7eee7;
+    --info: #41586e;
+    --info-soft: #e6ebf0;
+    --warning: #8f6b2e;
+    --warning-soft: #f3ecda;
+    --danger: #8c4a3f;
+    --danger-soft: #f2e3df;
+
+    /* Semantic aliases */
+    --surface-page: var(--paper);
+    --surface-card: var(--surface);
+    --text-body: var(--ink-1);
+    --text-muted: var(--ink-2);
+    --text-caption: var(--ink-3);
+    --focus-ring: 0 0 0 3px rgba(74, 97, 81, 0.28);
+
+    /* Typography — the font families come from next/font (app/layout.tsx) */
+    --font-display: var(--font-spectral), Georgia, "Times New Roman", serif;
+    --font-ui: var(--font-manrope), "Segoe UI", Arial, sans-serif;
+
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --text-md: 17px;
+    --text-lg: 20px;
+    --text-xl: 26px;
+    --text-2xl: 34px;
+    --text-3xl: 46px;
+
+    --leading-tight: 1.15;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.65;
+    --tracking-caps: 0.18em;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+    --space-9: 88px;
+    --hit-target: 44px;
+    --container: 1080px;
+
+    /* Shape and motion */
+    --radius-card: 4px;
+    --radius-input: 4px;
+    --radius-button: 999px;
+    --radius-pill: 999px;
+    --radius-modal: 6px;
+    --shadow-card: 0 1px 2px rgba(43, 47, 43, 0.05);
+    --shadow-raised: 0 6px 20px rgba(43, 47, 43, 0.08);
+    --shadow-modal: 0 16px 48px rgba(43, 47, 43, 0.16);
+    --ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+    --duration: 160ms;
+  }
+
+  html {
+    /* The system defines a light palette only — keep native controls in step. */
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--surface-page);
+    color: var(--text-body);
+    font-family: var(--font-ui);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 3px;
+  }
+
+  a:hover {
+    color: var(--accent-deep);
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /*
+   * Focus. The design token --focus-ring alone measures ~1.5:1 against paper,
+   * which is below the 3:1 WCAG 2.2 non-text contrast floor, so the soft ring
+   * is paired with a solid accent outline (6.1:1 on paper) that carries the
+   * contrast. Components may add `focus-visible:shadow-focus` on top.
+   */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

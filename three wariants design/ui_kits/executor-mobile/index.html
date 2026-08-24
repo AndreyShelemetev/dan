@@ -1,0 +1,73 @@
+<!-- @dsCard group="Исполнитель" viewport="1240x760" subtitle="Mobile-first: назначения, чек-лист, фото «после»" name="Экраны исполнителя" -->
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><title>Исполнитель — Память рядом</title></head>
+<body style="display:flex;gap:32px;justify-content:center;padding:32px;align-items:flex-start;">
+<!-- Экран 1: лента назначений -->
+<div style="width:360px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-raised);overflow:hidden;">
+  <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-family:var(--font-display);font-size:18px;">Назначения</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--success);"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);"></span>синхронизировано</span>
+  </div>
+  <div style="display:flex;gap:8px;padding:14px 20px;">
+    <span style="background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:600;border-radius:999px;padding:7px 14px;">Новые · 2</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Сегодня · 1</span>
+    <span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--ink-2);font-size:12px;font-weight:500;border-radius:999px;padding:7px 14px;">Доработка</span>
+  </div>
+  <div style="margin:0 20px 14px;background:var(--surface-raised);border:1px solid var(--border);border-radius:4px;padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+      <span style="font-size:15px;font-weight:700;">Базовый уход</span>
+      <span style="font-family:var(--font-display);font-size:16px;">3 400 ₽</span>
+    </div>
+    <div style="font-size:13px;color:var(--ink-2);line-height:1.5;">Смоленское кладбище · зона 14 · окно 19–21 августа · ~2 часа</div>
+    <div style="font-size:12px;color:var(--warning);margin-top:8px;">Ответить до 18 августа, 18:00</div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button style="flex:1;background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:13px;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;min-height:44px;">Принять</button>
+      <button style="flex:1;background:none;border:1px solid var(--border-strong);border-radius:999px;padding:13px;font-family:var(--font-ui);font-size:14px;color:var(--ink-1);cursor:pointer;min-height:44px;">Отклонить</button>
+    </div>
+  </div>
+  <div style="margin:0 20px 20px;background:var(--surface-raised);border:1px solid var(--border);border-radius:4px;padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+      <span style="font-size:15px;font-weight:700;">Сезонный уход</span>
+      <span style="font-family:var(--font-display);font-size:16px;">5 100 ₽</span>
+    </div>
+    <div style="font-size:13px;color:var(--ink-2);line-height:1.5;">Северное кладбище · зона 3 · окно 22–24 августа · ~3 часа</div>
+    <div style="font-size:12px;color:var(--ink-3);margin-top:8px;">Ответить до 19 августа, 12:00</div>
+  </div>
+</div>
+<!-- Экран 2: чек-лист визита -->
+<div style="width:360px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-raised);overflow:hidden;">
+  <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-display);font-size:18px;">Чек-лист визита</div>
+    <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">Заказ № 2418 · выполнено 3 из 5</div>
+  </div>
+  <div style="padding:8px 20px;display:flex;flex-direction:column;">
+    <div style="display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);min-height:44px;box-sizing:border-box;"><span style="width:20px;height:20px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-size:12px;flex-shrink:0;">✓</span><span style="font-size:14px;">Верификация захоронения</span></div>
+    <div style="display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);min-height:44px;box-sizing:border-box;"><span style="width:20px;height:20px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-size:12px;flex-shrink:0;">✓</span><span style="font-size:14px;">Фото «до» · 4 ракурса</span></div>
+    <div style="display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);min-height:44px;box-sizing:border-box;"><span style="width:20px;height:20px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-size:12px;flex-shrink:0;">✓</span><span style="font-size:14px;">Уборка участка</span></div>
+    <div style="display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);min-height:44px;box-sizing:border-box;"><span style="width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border-strong);background:var(--surface-raised);flex-shrink:0;"></span><span style="font-size:14px;font-weight:600;">Очистка памятника</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:13px 0;">
+      <div style="display:flex;gap:12px;align-items:center;"><span style="width:20px;height:20px;border-radius:4px;background:var(--warning-soft);display:grid;place-items:center;color:var(--warning);font-size:12px;flex-shrink:0;">—</span><span style="font-size:14px;">Подсыпка грунта</span><span style="margin-left:auto;font-size:11px;color:var(--warning);font-weight:600;">невозможно</span></div>
+      <div style="font-size:12px;color:var(--ink-3);padding-left:32px;">Причина: грунт переувлажнён после дождя. Фото приложено.</div>
+    </div>
+  </div>
+  <div style="padding:8px 20px 20px;">
+    <div style="background:var(--warning-soft);border-radius:4px;padding:10px 14px;font-size:12px;color:var(--ink-1);margin-bottom:12px;">Нет сети · 2 события и 3 фото в очереди, отправятся автоматически</div>
+    <button style="width:100%;background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;min-height:44px;">Продолжить</button>
+  </div>
+</div>
+<!-- Экран 3: фото «после» -->
+<div style="width:360px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-raised);overflow:hidden;">
+  <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
+    <div style="font-family:var(--font-display);font-size:18px;">Фото «после»</div>
+    <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">Ракурс 2 из 4 · Памятник спереди</div>
+  </div>
+  <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;"><div style="aspect-ratio:3/4;background:#E9E1D4;border-radius:4px;display:grid;place-items:center;font-size:12px;color:var(--ink-3);">эталон «до»</div></div>
+      <div style="flex:1;"><div style="aspect-ratio:3/4;background:var(--ink-1);border-radius:4px;display:grid;place-items:center;font-size:12px;color:var(--ink-inverse);opacity:.85;">камера</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink-3);line-height:1.5;">Повторите ракурс эталона. Кадр сохранится в защищённом хранилище устройства до подтверждённой загрузки.</div>
+    <button style="width:100%;background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px;font-family:var(--font-ui);font-size:14px;font-weight:600;cursor:pointer;min-height:44px;">Снять кадр</button>
+    <button style="width:100%;background:none;border:1px solid var(--danger);border-radius:999px;padding:13px;font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--danger);cursor:pointer;min-height:44px;">Экстренная остановка</button>
+  </div>
+</div>
+</body></html>

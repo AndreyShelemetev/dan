@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; background: #F8F8F6; }
+a { color: #41586E; } a:hover { color: #2E4152; }
+</style>
+</helmet>
+<div style="font-family: Commissioner, sans-serif; color: #1E2730; min-height: 100vh;">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 18px 48px; background: #FFFFFF; border-bottom: 1px solid #E6E8E6;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 28px; height: 28px; border-radius: 8px; background: #41586E;"></div>
+      <div style="font-weight: 700; font-size: 17px;">Память рядом</div>
+    </div>
+    <nav style="display: flex; gap: 28px; font-size: 14px; font-weight: 500; color: #4E5A64;">
+      <span>Услуги</span><span>Как работает</span><span>Гарантии</span><span>FAQ</span>
+    </nav>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span style="font-size: 13px; color: #8B949C;">RU / EN</span>
+      <button style="background: #41586E; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-family: Commissioner, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;">Войти</button>
+    </div>
+  </header>
+  <section style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; max-width: 1120px; margin: 0 auto; padding: 72px 48px 56px;">
+    <div>
+      <h1 style="font-size: 44px; font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; margin: 0 0 20px; text-wrap: pretty;">Дистанционный уход за захоронением — со статусом и отчётом</h1>
+      <p style="font-size: 16px; line-height: 1.6; color: #4E5A64; margin: 0 0 32px; max-width: 460px;">Санкт-Петербург. Проверенный исполнитель, построчная смета, фото «до и после» и проверка качества по каждому заказу.</p>
+      <div style="display: flex; gap: 12px;">
+        <button style="background: #41586E; color: #fff; border: none; border-radius: 10px; padding: 15px 28px; font-family: Commissioner, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer;">Создать заявку</button>
+        <button style="background: #fff; color: #1E2730; border: 1px solid #D6DAD8; border-radius: 10px; padding: 15px 28px; font-family: Commissioner, sans-serif; font-size: 15px; font-weight: 500; cursor: pointer;">Заказать осмотр</button>
+      </div>
+      <div style="display: flex; gap: 24px; margin-top: 36px; font-size: 13px; color: #4E5A64;">
+        <span>✓ Смета до оплаты</span><span>✓ Фотоотчёт по ракурсам</span><span>✓ Контроль качества</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E6E8E6; border-radius: 16px; padding: 28px; box-shadow: 0 8px 24px rgba(30,39,48,0.06);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <div style="font-weight: 700; font-size: 15px;">Заказ № 2418</div>
+        <span style="background: #EAF0EA; color: #3C6144; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 5px 12px;">Работа выполняется</span>
+      </div>
+      <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="4">
+        <div style="display: flex; gap: 14px; align-items: flex-start; padding: 10px 0;">
+          <div style="width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; background: {{ t.dot }};"></div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 600; color: {{ t.color }};">{{ t.label }}</div>
+            <div style="font-size: 12px; color: #8B949C;">{{ t.note }}</div>
+          </div>
+          <div style="font-size: 12px; color: #8B949C;">{{ t.date }}</div>
+        </div>
+      </sc-for>
+      <button style="width: 100%; margin-top: 14px; background: #F0F3F1; color: #1E2730; border: none; border-radius: 10px; padding: 12px; font-family: Commissioner, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;">Открыть заказ</button>
+    </div>
+  </section>
+  <section style="max-width: 1120px; margin: 0 auto; padding: 0 48px 72px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+    <sc-for list="{{ packages }}" as="p" hint-placeholder-count="3">
+      <div style="background: #FFFFFF; border: 1px solid #E6E8E6; border-radius: 16px; padding: 24px;">
+        <div style="font-weight: 700; font-size: 17px; margin-bottom: 6px;">{{ p.name }}</div>
+        <div style="font-size: 13px; line-height: 1.55; color: #4E5A64; margin-bottom: 20px;">{{ p.desc }}</div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-size: 12px; color: #8B949C;">{{ p.term }}</span>
+          <span style="font-size: 18px; font-weight: 800;">от {{ p.price }} ₽</span>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      timeline: [
+        { label: "Смета принята", note: "Версия 2 · 12 640 ₽", date: "14 авг", dot: "#3C6144", color: "#1E2730" },
+        { label: "Оплата подтверждена", note: "Карта · чек отправлен", date: "14 авг", dot: "#3C6144", color: "#1E2730" },
+        { label: "Исполнитель назначен", note: "Визит: 19–21 августа", date: "15 авг", dot: "#3C6144", color: "#1E2730" },
+        { label: "Работа выполняется", note: "Следующий шаг — проверка качества", date: "сегодня", dot: "#41586E", color: "#1E2730" }
+      ],
+      packages: [
+        { name: "Базовый уход", desc: "Уборка участка, очистка памятника, вынос мусора и фотоотчёт.", term: "1 визит", price: "4 900" },
+        { name: "Сезонный уход", desc: "Прополка, подсыпка, мытьё, мелкий ремонт по согласованию.", term: "1–2 визита", price: "8 400" },
+        { name: "Уход с цветами", desc: "Базовый уход и живые цветы к памятной дате.", term: "1 визит", price: "6 200" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

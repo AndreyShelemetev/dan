@@ -1,0 +1,18 @@
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  adminer:
+    image: adminer:latest
+    container_name: pamyat-ryadom-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "${ADMINER_PORT}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pamyat-ryadom

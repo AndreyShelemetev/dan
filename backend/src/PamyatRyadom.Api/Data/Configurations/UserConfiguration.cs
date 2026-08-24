@@ -1,0 +1,29 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PamyatRyadom.Api.Models.Auth;
+
+namespace PamyatRyadom.Api.Data.Configurations;
+
+internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> b)
+    {
+        b.ToTable("users", t =>
+        {
+            t.HasCheckConstraint("ck_users_role", DbConstraintHelpers.InListCheck("role", UserRoles.All));
+            t.HasCheckConstraint("ck_users_status", DbConstraintHelpers.InListCheck("status", UserStatuses.All));
+        });
+
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Role).HasMaxLength(32).IsRequired().HasDefaultValue(UserRoles.Client);
+        b.Property(x => x.Status).HasMaxLength(32).IsRequired().HasDefaultValue(UserStatuses.Active);
+        b.Property(x => x.DisplayName).HasMaxLength(255);
+        b.Property(x => x.Locale).HasMaxLength(16);
+        b.Property(x => x.Timezone).HasMaxLength(64);
+        b.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+        b.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
+
+        b.HasIndex(x => x.Role);
+        b.HasIndex(x => x.Status);
+    }
+}

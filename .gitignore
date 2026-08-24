@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# .NET
+**/bin/
+**/obj/
+**/out/
+**/*.user
+**/.vs/
+
+# Node / Next.js
+node_modules/
+**/node_modules/
+.next/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test artefacts
+TestResults/
+coverage/
+frontend/test-results/
+frontend/playwright-report/

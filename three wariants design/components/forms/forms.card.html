@@ -1,0 +1,20 @@
+<!-- @dsCard group="Components" viewport="700x330" subtitle="Кнопки, поля, выбор" name="Формы" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"></head>
+<body style="padding:20px;display:flex;flex-direction:column;gap:18px;">
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  <button style="font-family:var(--font-ui);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;background:var(--accent);color:var(--on-accent);border:none;">Создать заявку</button>
+  <button style="font-family:var(--font-ui);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;background:transparent;color:var(--ink-1);border:1px solid var(--border-strong);">Заказать осмотр</button>
+  <button style="font-family:var(--font-ui);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;background:transparent;color:var(--accent);border:none;">Задать вопрос</button>
+  <button style="font-family:var(--font-ui);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;background:var(--danger);color:#fff;border:none;">Отменить заказ</button>
+  <button style="font-family:var(--font-ui);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;background:var(--accent);color:var(--on-accent);border:none;opacity:.45;">Недоступно</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:600px;">
+  <label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:13px;font-weight:600;">Телефон или e-mail</span><input placeholder="+7" style="font-family:var(--font-ui);font-size:15px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:4px;padding:12px 14px;"><span style="font-size:12px;color:var(--ink-3);">Пришлём одноразовый код</span></label>
+  <label style="display:flex;flex-direction:column;gap:6px;"><span style="font-size:13px;font-weight:600;">Участок</span><input value="" style="font-family:var(--font-ui);font-size:15px;background:var(--surface-raised);border:1px solid var(--danger);border-radius:4px;padding:12px 14px;"><span style="font-size:12px;color:var(--danger);">Укажите номер участка</span></label>
+</div>
+<div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap;">
+  <label style="display:flex;gap:10px;align-items:center;font-size:14px;"><span style="width:18px;height:18px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-size:11px;">✓</span>Принимаю условия оферты</label>
+  <label style="display:flex;gap:10px;align-items:center;font-size:14px;"><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--accent);display:grid;place-items:center;"><span style="width:9px;height:9px;border-radius:50%;background:var(--accent);"></span></span>Базовый уход</label>
+  <label style="display:flex;gap:12px;align-items:center;font-size:14px;"><span style="width:40px;height:24px;border-radius:999px;background:var(--accent);position:relative;display:inline-block;"><span style="position:absolute;top:3px;left:19px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>SMS о смене статуса</label>
+</div>
+</body></html>
