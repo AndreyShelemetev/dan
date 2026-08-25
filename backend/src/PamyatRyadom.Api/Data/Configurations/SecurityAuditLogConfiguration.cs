@@ -12,11 +12,16 @@ internal sealed class SecurityAuditLogConfiguration : IEntityTypeConfiguration<S
         {
             t.HasCheckConstraint("ck_security_audit_logs_event_type",
                 DbConstraintHelpers.InListCheck("event_type", SecurityAuditEventTypes.All));
+            // actor_role snapshots a users.role value, so the same value set has to hold here;
+            // it is nullable (events with no acting user), hence the "or null" variant.
+            t.HasCheckConstraint("ck_security_audit_logs_actor_role",
+                DbConstraintHelpers.InListOrNullCheck("actor_role", UserRoles.All));
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.EventType).HasMaxLength(64).IsRequired();
-        b.Property(x => x.ActorRole).HasMaxLength(32);
+        // EventType/ActorRole are status-like: `text` + a named CHECK (CONVENTIONS.md §3).
+        b.Property(x => x.EventType).HasColumnType("text").IsRequired();
+        b.Property(x => x.ActorRole).HasColumnType("text");
         b.Property(x => x.IpAddress).HasColumnType("inet");
         b.Property(x => x.UserAgent).HasMaxLength(512);
         b.Property(x => x.Metadata).HasColumnType("jsonb");

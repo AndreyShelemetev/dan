@@ -17,7 +17,8 @@ internal sealed class AuthIdentityConfiguration : IEntityTypeConfiguration<AuthI
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.Provider).HasMaxLength(32).IsRequired();
+        // Provider is status-like: `text` + a named CHECK (CONVENTIONS.md §3).
+        b.Property(x => x.Provider).HasColumnType("text").IsRequired();
         b.Property(x => x.ProviderUserId).HasMaxLength(255);
         b.Property(x => x.Email).HasMaxLength(320);
         b.Property(x => x.Phone).HasMaxLength(32);

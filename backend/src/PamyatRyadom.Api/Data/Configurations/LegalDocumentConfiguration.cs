@@ -15,11 +15,12 @@ internal sealed class LegalDocumentConfiguration : IEntityTypeConfiguration<Lega
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.Type).HasMaxLength(32).IsRequired();
+        // Type/Status are status-like: `text` + a named CHECK (CONVENTIONS.md §3).
+        b.Property(x => x.Type).HasColumnType("text").IsRequired();
         b.Property(x => x.Version).HasMaxLength(64).IsRequired();
         b.Property(x => x.Locale).HasMaxLength(16).IsRequired();
         b.Property(x => x.ContentHash).HasMaxLength(128).IsRequired();
-        b.Property(x => x.Status).HasMaxLength(16).IsRequired().HasDefaultValue(LegalDocumentStatuses.Draft);
+        b.Property(x => x.Status).HasColumnType("text").IsRequired().HasDefaultValue(LegalDocumentStatuses.Draft);
         b.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
         b.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
 

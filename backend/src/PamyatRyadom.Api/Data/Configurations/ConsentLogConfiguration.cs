@@ -14,7 +14,8 @@ internal sealed class ConsentLogConfiguration : IEntityTypeConfiguration<Consent
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.ConsentType).HasMaxLength(32).IsRequired();
+        // ConsentType is status-like: `text` + a named CHECK (CONVENTIONS.md §3).
+        b.Property(x => x.ConsentType).HasColumnType("text").IsRequired();
         b.Property(x => x.DocumentVersion).HasMaxLength(64).IsRequired();
         b.Property(x => x.Email).HasMaxLength(320);
         b.Property(x => x.Phone).HasMaxLength(32);

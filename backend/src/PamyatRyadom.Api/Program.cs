@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -44,8 +45,33 @@ builder.Services.Configure<EmailOptions>(options =>
     options.FromName = configuration["SMTP_FROM_NAME"] ?? options.FromName;
 });
 
-// Protects the TOTP secrets at rest (MfaService). Idempotent — safe alongside the framework defaults.
-builder.Services.AddDataProtection();
+// Data Protection protects the TOTP secrets at rest (MfaService.ProtectSecret). The framework default
+// key ring is per-container — `/root/.aspnet/DataProtection-Keys` on the container's writable layer,
+// or an in-memory ring when no user profile exists — so it dies with the container: redeploy the api,
+// or run a second replica, and every stored MFA secret becomes permanently undecryptable, locking
+// every enrolled user out with no recovery path. Persist it to a directory expected to live on durable
+// storage (a named Docker volume in compose) and pin the application name, since the ring is scoped by
+// it and an unpinned name changes with the entry-assembly path.
+var dataProtection = builder.Configuration.GetSection("DataProtection");
+var dataProtectionApplicationName = dataProtection["ApplicationName"] is { Length: > 0 } configuredAppName
+    ? configuredAppName
+    : "PamyatRyadom.Api";
+
+// Configurable per environment (DataProtection__KeyRingPath): the container mounts a volume, a
+// developer running `dotnet run` gets a stable per-machine directory instead.
+var configuredKeyRingPath = builder.Configuration["DataProtection:KeyRingPath"];
+var keyRingIsConfigured = !string.IsNullOrWhiteSpace(configuredKeyRingPath);
+var keyRingPath = keyRingIsConfigured
+    ? configuredKeyRingPath!.Trim()
+    : Path.Combine(Path.GetTempPath(), "pamyat-ryadom", "dataprotection-keys");
+
+// Created up front, and deliberately not swallowed: the key ring is written lazily, so an unwritable
+// path would otherwise first surface as a failed MFA enrollment long after startup.
+Directory.CreateDirectory(keyRingPath);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keyRingPath))
+    .SetApplicationName(dataProtectionApplicationName);
 
 // Email delivery is chosen once, at startup, by environment: dev logs the code to the console, every
 // other environment sends it over SMTP. A DI swap rather than a runtime flag, so no configuration
@@ -126,6 +152,16 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// The temp-directory fallback is fine for a dev machine or a test run, but on a real deployment it is
+// the same trap as the framework default — say so loudly rather than losing MFA secrets silently.
+if (!keyRingIsConfigured && app.Environment.IsProduction())
+{
+    app.Logger.LogWarning(
+        "DataProtection:KeyRingPath is not configured; using the non-durable fallback {KeyRingPath}. " +
+        "Point DataProtection__KeyRingPath at persistent storage or stored MFA secrets will be lost on redeploy.",
+        keyRingPath);
+}
 
 if (app.Environment.IsDevelopment())
 {

@@ -31,8 +31,15 @@ services:
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       # Frontend origin allowed by CORS — see Program.cs. Defaults to the local dev frontend.
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3100}
+      # Data Protection key ring (MfaService encrypts TOTP secrets with it). Must point at the
+      # dataprotection_keys volume below: on the framework default the ring lives on the container's
+      # writable layer, so any redeploy — or a second replica — makes every stored MFA secret
+      # permanently undecryptable.
+      DataProtection__KeyRingPath: /var/lib/pamyat-ryadom/dataprotection-keys
     ports:
       - "${API_PORT}:8080"
+    volumes:
+      - dataprotection_keys:/var/lib/pamyat-ryadom/dataprotection-keys
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,6 +91,9 @@ services:
 
 volumes:
   postgres_data:
+  # Data Protection key ring for the api — see the DataProtection__KeyRingPath env var above.
+  # Losing this volume means every enrolled user has to re-enroll MFA; back it up with the database.
+  dataprotection_keys:
 
 networks:
   pamyat-ryadom:

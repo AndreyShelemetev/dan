@@ -15,10 +15,11 @@ internal sealed class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.Channel).HasMaxLength(16).IsRequired();
+        // Channel/Purpose are status-like: `text` + a named CHECK (CONVENTIONS.md §3).
+        b.Property(x => x.Channel).HasColumnType("text").IsRequired();
         b.Property(x => x.Destination).HasMaxLength(320).IsRequired();
         b.Property(x => x.CodeHash).HasMaxLength(255).IsRequired();
-        b.Property(x => x.Purpose).HasMaxLength(32).IsRequired();
+        b.Property(x => x.Purpose).HasColumnType("text").IsRequired();
         b.Property(x => x.AttemptCount).HasDefaultValue(0);
         b.Property(x => x.IpAddress).HasColumnType("inet");
         b.Property(x => x.UserAgent).HasMaxLength(512);

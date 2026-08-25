@@ -15,8 +15,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         });
 
         b.HasKey(x => x.Id);
-        b.Property(x => x.Role).HasMaxLength(32).IsRequired().HasDefaultValue(UserRoles.Client);
-        b.Property(x => x.Status).HasMaxLength(32).IsRequired().HasDefaultValue(UserStatuses.Active);
+        // Status-like columns are `text` + a named CHECK (CONVENTIONS.md §3) — the CHECK is the
+        // authority on the allowed values, so a varchar width would only add a second, weaker rule.
+        b.Property(x => x.Role).HasColumnType("text").IsRequired().HasDefaultValue(UserRoles.Client);
+        b.Property(x => x.Status).HasColumnType("text").IsRequired().HasDefaultValue(UserStatuses.Active);
         b.Property(x => x.DisplayName).HasMaxLength(255);
         b.Property(x => x.Locale).HasMaxLength(16);
         b.Property(x => x.Timezone).HasMaxLength(64);

@@ -83,7 +83,8 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
   destination).
 - Schema: 9 tables — `users`, `auth_identities`, `auth_sessions`, `otp_codes`, `mfa_secrets`,
   `consent_logs`, `legal_documents`, `legal_acceptances`, `security_audit_logs` — created by the
-  `InitialIdentity` migration.
+  `InitialIdentity` migration; `StatusColumnsToText` then moved every status-like column from
+  `varchar(n)` to `text` + CHECK, per CONVENTIONS.md.
 - SMS login returns 501: no SMS provider is wired up. Email is the only working channel.
 
 ## Security & data rules
@@ -93,6 +94,14 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
 - Roles: `client`, `executor`, `dispatcher`, `qa`, `support`, `finance`, `admin`, `superadmin`.
   MFA is required for every role except `client`/`executor`.
 - Session TTL: 14 days for client/executor, 12 hours for privileged roles, with rotation on use.
+  Rotation slides the expiry but never past an absolute wall measured from `created_at`:
+  30 days for client/executor, 24 hours for privileged roles. A session past its wall is
+  revoked server-side and audited as `session_revoked` / `max_lifetime_exceeded`.
+- MFA secrets are encrypted with ASP.NET Data Protection. The key ring **must** be persisted
+  (`DataProtection__KeyRingPath`, backed by the `dataprotection_keys` volume in Compose) —
+  on the framework default it lives on the container's writable layer, so recreating the api
+  container silently makes every stored MFA secret undecryptable. Back this volume up
+  alongside `postgres_data`.
 - Media (photo/video evidence) lives in a private S3-compatible bucket via presigned URLs —
   never on local disk, never served through the API process itself.
 - Payments go through YooKassa as one-off redirect-confirmation payments (no Safe Deal/escrow).
@@ -112,7 +121,9 @@ Backend (`backend/`):
 
 ```bash
 dotnet build PamyatRyadom.sln
-dotnet test PamyatRyadom.sln     # xUnit + Testcontainers — needs a running Docker daemon
+dotnet test PamyatRyadom.sln     # 106 tests (health + Identity). xUnit + Testcontainers:
+                                 # needs a running Docker daemon, otherwise nearly every
+                                 # test fails on "cannot connect to the Docker daemon"
 dotnet ef migrations add <Name> --project src/PamyatRyadom.Api --startup-project src/PamyatRyadom.Api
 ```
 

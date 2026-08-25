@@ -33,6 +33,12 @@ public sealed class AuthService : IAuthService
 
     private const int UserAgentMaxLength = 512;
 
+    /// <summary>Metadata reason stamped on the <c>session_revoked</c> audit row when a session is killed
+    /// by its absolute lifetime wall, as opposed to a user-initiated logout / "sign out everywhere".
+    /// It rides in the metadata rather than a new event type so the <c>ck_security_audit_logs_event_type</c>
+    /// CHECK constraint (and the schema behind it) stays untouched.</summary>
+    private const string MaxLifetimeExceededReason = "max_lifetime_exceeded";
+
     private readonly AppDbContext _db;
     private readonly AuthOptions _options;
     private readonly IEmailSender _emailSender;
@@ -302,6 +308,17 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
+        // Absolute lifetime. ExpiresAt slides forward on every rotation, so CreatedAt is the only
+        // anchor that can ever end a continuously used session. Past that wall the session is dead:
+        // revoked here, not merely rejected, so the row can never be resurrected by a later request
+        // and the kill shows up in the audit trail.
+        if (now >= AbsoluteExpiresAt(session))
+        {
+            RevokeForMaxLifetime(session, session.User, now);
+            await _db.SaveChangesAsync(ct);
+            return null;
+        }
+
         if (session.User.Status != UserStatuses.Active)
         {
             // A blocked/deleted account keeps no live sessions.
@@ -316,11 +333,12 @@ public sealed class AuthService : IAuthService
         if (ShouldRotate(session, now))
         {
             // Rotation, not re-login: the row keeps its identity, only the secret behind it changes.
-            // The expiry slides so an actively used session is never cut off mid-use.
+            // The expiry slides so an actively used session is never cut off mid-use — but never past
+            // the absolute wall, or "actively used" would simply mean "immortal".
             effectiveToken = SecretHasher.GenerateOpaqueToken();
             session.SessionTokenHash = SecretHasher.HashHighEntropy(effectiveToken);
             session.RotatedAt = now;
-            session.ExpiresAt = now.Add(SessionTtl(session.IsPrivileged));
+            session.ExpiresAt = Earliest(now.Add(SessionTtl(session.IsPrivileged)), AbsoluteExpiresAt(session));
             rotated = true;
             await _db.SaveChangesAsync(ct);
         }
@@ -494,11 +512,20 @@ public sealed class AuthService : IAuthService
             if (session is not null && !session.IsPrivileged)
             {
                 session.IsPrivileged = true;
-                // A privileged session must not outlive the short privileged TTL it just earned.
-                var privilegedExpiry = now.Add(SessionTtl(isPrivileged: true));
+                // A privileged session must not outlive the short privileged TTL it just earned, nor
+                // the (also shorter) privileged wall measured from when the session was created.
+                var privilegedExpiry = Earliest(now.Add(SessionTtl(isPrivileged: true)), AbsoluteExpiresAt(session));
                 if (session.ExpiresAt > privilegedExpiry)
                 {
                     session.ExpiresAt = privilegedExpiry;
+                }
+
+                // Elevating a session already older than the privileged wall leaves nothing to elevate.
+                // End it here rather than hand back a session the very next request would reject — the
+                // enrollment itself still stands, the user just signs in again for a fresh one.
+                if (session.ExpiresAt <= now)
+                {
+                    RevokeForMaxLifetime(session, user, now, context);
                 }
             }
         }
@@ -544,6 +571,52 @@ public sealed class AuthService : IAuthService
         isPrivileged
             ? TimeSpan.FromHours(_options.PrivilegedSessionTtlHours)
             : TimeSpan.FromDays(_options.ClientSessionTtlDays);
+
+    /// <summary>How long a session may live in total, however often it is used.</summary>
+    private TimeSpan MaxSessionLifetime(bool isPrivileged)
+    {
+        var configured = isPrivileged
+            ? TimeSpan.FromHours(_options.MaxPrivilegedSessionLifetimeHours)
+            : TimeSpan.FromDays(_options.MaxSessionLifetimeDays);
+
+        // Invariant: the wall is never closer than one sliding TTL window. A cap misconfigured to zero
+        // or below the TTL can then only make sessions shorter-lived than intended — never kill a
+        // brand-new session on the request right after login.
+        var ttl = SessionTtl(isPrivileged);
+        return configured < ttl ? ttl : configured;
+    }
+
+    /// <summary>The wall: the instant past which this session is finished no matter how recently it was
+    /// used. Anchored on <see cref="AuthSession.CreatedAt"/>, which rotation never moves.</summary>
+    private DateTimeOffset AbsoluteExpiresAt(AuthSession session) =>
+        session.CreatedAt.Add(MaxSessionLifetime(session.IsPrivileged));
+
+    private void RevokeForMaxLifetime(
+        AuthSession session,
+        User? user,
+        DateTimeOffset now,
+        AuthRequestContext? context = null)
+    {
+        session.RevokedAt = now;
+
+        // Timestamps and ids only — a security event carries no destination, token or other PII.
+        AddAuditLog(
+            SecurityAuditEventTypes.SessionRevoked,
+            context,
+            new
+            {
+                session_id = session.Id,
+                scope = "session",
+                reason = MaxLifetimeExceededReason,
+                privileged_session = session.IsPrivileged,
+                session_created_at = session.CreatedAt,
+                max_lifetime_hours = MaxSessionLifetime(session.IsPrivileged).TotalHours
+            },
+            user);
+    }
+
+    private static DateTimeOffset Earliest(DateTimeOffset left, DateTimeOffset right) =>
+        left < right ? left : right;
 
     private bool ShouldRotate(AuthSession session, DateTimeOffset now)
     {
@@ -697,15 +770,19 @@ public sealed class AuthService : IAuthService
         return identity?.Email ?? identity?.Phone ?? $"user-{user.Id}";
     }
 
-    private void AddAuditLog(string eventType, AuthRequestContext context, object? metadata, User? user = null)
+    /// <summary><paramref name="context"/> is nullable because not every audited event happens on a
+    /// request that carries one: <see cref="GetCurrentUserAsync"/> is reached through
+    /// <see cref="IAuthService"/>, which takes only the token, so a session revoked there is recorded
+    /// without an IP/user-agent rather than with a fabricated one.</summary>
+    private void AddAuditLog(string eventType, AuthRequestContext? context, object? metadata, User? user = null)
     {
         _db.SecurityAuditLogs.Add(new SecurityAuditLog
         {
             User = user,
             EventType = eventType,
             ActorRole = user?.Role,
-            IpAddress = context.IpAddress,
-            UserAgent = Truncate(context.UserAgent, UserAgentMaxLength),
+            IpAddress = context?.IpAddress,
+            UserAgent = Truncate(context?.UserAgent, UserAgentMaxLength),
             Metadata = metadata is null ? null : JsonSerializer.SerializeToDocument(metadata)
         });
     }
