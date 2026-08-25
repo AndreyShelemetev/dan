@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PamyatRyadom.Api.Models.Auth;
+using PamyatRyadom.Api.Models.BurialSites;
+using PamyatRyadom.Api.Models.Media;
 
 namespace PamyatRyadom.Api.Data;
 
@@ -29,6 +31,14 @@ public sealed class AppDbContext : DbContext
     public DbSet<ConsentLog> ConsentLogs => Set<ConsentLog>();
     public DbSet<LegalDocument> LegalDocuments => Set<LegalDocument>();
     public DbSet<LegalAcceptance> LegalAcceptances => Set<LegalAcceptance>();
+
+    // Burial sites: the digital record of a place of remembrance, plus family access.
+    public DbSet<Cemetery> Cemeteries => Set<Cemetery>();
+    public DbSet<BurialSite> BurialSites => Set<BurialSite>();
+    public DbSet<BurialSiteMember> BurialSiteMembers => Set<BurialSiteMember>();
+
+    // Media: metadata only — the bytes live in a private S3-compatible bucket.
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
