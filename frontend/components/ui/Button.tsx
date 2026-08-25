@@ -12,13 +12,21 @@ export type ButtonSize = "sm" | "md" | "lg";
 const BASE =
   "inline-flex min-h-hit items-center justify-center gap-2 whitespace-nowrap rounded-pill border font-sans font-semibold transition-colors duration-ds ease-ds disabled:pointer-events-none disabled:opacity-45";
 
+/**
+ * Every variant states its hover colour explicitly, including the ones whose text does not
+ * change. ButtonLink renders an `<a>`, and globals.css darkens links on hover
+ * (`a:hover { color: var(--accent-deep) }`) — a rule with higher specificity (0,1,1) than a bare
+ * Tailwind colour utility (0,1,0). Without a `hover:text-*` here, the label on a filled button
+ * turned dark green on dark green and became unreadable. `hover:text-…` is class + pseudo-class
+ * (0,2,0), so it wins.
+ */
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "border-transparent bg-accent text-ink-inverse hover:bg-accent-hover active:bg-accent-deep",
+    "border-transparent bg-accent text-ink-inverse hover:bg-accent-hover hover:text-ink-inverse active:bg-accent-deep",
   secondary:
     "border-border-strong bg-transparent text-ink-1 hover:border-accent hover:text-accent-deep",
   ghost: "border-transparent bg-transparent text-accent hover:bg-accent-soft hover:text-accent-deep",
-  danger: "border-transparent bg-danger text-ink-inverse hover:bg-danger/90",
+  danger: "border-transparent bg-danger text-ink-inverse hover:bg-danger/90 hover:text-ink-inverse",
 };
 
 const SIZES: Record<ButtonSize, string> = {

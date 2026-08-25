@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { ApiError } from "@/lib/api/client";
 import { acceptInvitation, type BurialSite } from "@/lib/api/burialSites";
@@ -47,18 +48,12 @@ export function AcceptInvitation({ token }: { token: string }) {
           <strong className="font-semibold">{site.deceasedFullName}</strong>.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/cabinet/${site.id}`}
-            className="inline-flex min-h-hit items-center rounded-pill border border-transparent bg-accent px-6 py-3 font-semibold text-ink-inverse no-underline hover:bg-accent-hover"
-          >
-            Открыть карточку
-          </Link>
-          <Link
-            href="/cabinet"
-            className="inline-flex min-h-hit items-center rounded-pill border border-border-strong px-6 py-3 font-semibold text-ink-1 no-underline hover:border-accent hover:text-accent-deep"
-          >
+          {/* ButtonLink rather than a hand-styled Link: the shared variants carry the hover
+              colours that keep a filled label readable, which duplicated classes here did not. */}
+          <ButtonLink href={`/cabinet/${site.id}`}>Открыть карточку</ButtonLink>
+          <ButtonLink href="/cabinet" variant="secondary">
             Все места памяти
-          </Link>
+          </ButtonLink>
         </div>
       </Card>
     );
