@@ -9,10 +9,12 @@ namespace PamyatRyadom.Api.Services.Auth;
 public sealed class ConsoleEmailSender : IEmailSender
 {
     private readonly ILogger<ConsoleEmailSender> _logger;
+    private readonly DevOtpInbox _inbox;
 
-    public ConsoleEmailSender(ILogger<ConsoleEmailSender> logger)
+    public ConsoleEmailSender(ILogger<ConsoleEmailSender> logger, DevOtpInbox inbox)
     {
         _logger = logger;
+        _inbox = inbox;
     }
 
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
@@ -22,6 +24,12 @@ public sealed class ConsoleEmailSender : IEmailSender
             message.To,
             message.Subject,
             message.TextBody ?? message.HtmlBody);
+
+        // Also kept in memory so the dev login screen can show the code under the input
+        // instead of sending a developer to the container logs. Reachable only through the
+        // Development-only endpoint in Program.cs.
+        _inbox.Record(message.To, message.TextBody ?? message.HtmlBody);
+
         return Task.CompletedTask;
     }
 }

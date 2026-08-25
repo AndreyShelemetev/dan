@@ -71,3 +71,18 @@ export function getMe(cookieHeader?: string): Promise<AuthUser> {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 }
+
+/**
+ * Development helper: the last login code sent to `destination`.
+ *
+ * Backed by an endpoint that Program.cs only maps when the API runs in Development — in any
+ * other environment the route does not exist and this resolves to null. Callers must treat a
+ * null as the normal case and render nothing, never as an error worth showing.
+ */
+export function getDevOtp(destination: string): Promise<string | null> {
+  return apiFetch<{ destination: string; code: string }>(
+    `/dev/last-otp?destination=${encodeURIComponent(destination)}`,
+  )
+    .then((res) => res.code)
+    .catch(() => null);
+}

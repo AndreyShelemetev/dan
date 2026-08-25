@@ -80,6 +80,7 @@ builder.Services.AddDataProtection()
 // value can turn production into "print the login code".
 if (builder.Environment.IsDevelopment())
 {
+    builder.Services.AddSingleton<DevOtpInbox>();
     builder.Services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 }
 else
@@ -205,6 +206,24 @@ app.Use(async (context, next) =>
 app.UseRateLimiter();
 
 app.MapControllers();
+
+// Development-only: hands back the last login code sent to an address, so the sign-in screen can
+// show it under the input rather than making a developer read container logs.
+//
+// Mapped inside this branch on purpose. The route simply does not exist in any other environment —
+// no feature flag, no header, no configuration value can bring it back, which is the only safe way
+// to ship something that returns a login credential. Nothing here is a substitute for reading the
+// code from a real inbox once SMTP is configured.
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/api/v1/dev/last-otp", (string destination, DevOtpInbox inbox) =>
+    {
+        var code = inbox.Peek(destination);
+        return code is null
+            ? Results.NotFound(ApiResponse<object>.Fail(ApiError.NotFound("Код не найден.")))
+            : Results.Ok(ApiResponse<object>.Ok(new { destination, code }));
+    });
+}
 
 app.Run();
 

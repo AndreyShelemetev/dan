@@ -7,7 +7,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { requestOtp, verifyOtp } from "@/lib/api/auth";
+import { getDevOtp, requestOtp, verifyOtp } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +48,10 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Only ever set when the API runs in Development, where it exposes the last code it "sent".
+  // Everywhere else the endpoint is absent and this stays null, so the hint never renders.
+  const [devCode, setDevCode] = useState<string | null>(null);
+
   async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -55,6 +59,7 @@ export default function LoginPage() {
     try {
       await requestOtp(email);
       setStep("code");
+      setDevCode(await getDevOtp(email));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -137,6 +142,10 @@ export default function LoginPage() {
               placeholder="123456"
             />
 
+            {devCode && (
+              <DevCodeHint code={devCode} onUse={() => setCode(devCode)} />
+            )}
+
             {error && <FormError message={error} />}
 
             <Button type="submit" disabled={isSubmitting}>
@@ -159,6 +168,29 @@ export default function LoginPage() {
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * The code the dev API just "sent", shown so local testing does not mean reading container logs.
+ *
+ * Rendered only when the API handed one back, which only a Development API ever does. Labelled
+ * explicitly rather than styled to blend in: it should read as scaffolding, so nobody mistakes it
+ * for a feature or wonders why it is missing on a real deployment.
+ */
+function DevCodeHint({ code, onUse }: { code: string; onUse: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-card border border-dashed border-border-strong bg-surface px-4 py-3">
+      <span className="text-xs uppercase tracking-caps text-ink-2">Режим разработки</span>
+      <code className="font-mono text-base font-semibold tracking-widest text-ink-1">{code}</code>
+      <button
+        type="button"
+        onClick={onUse}
+        className="min-h-hit text-sm text-accent underline underline-offset-2 hover:text-accent-deep"
+      >
+        Подставить
+      </button>
+    </div>
   );
 }
 
