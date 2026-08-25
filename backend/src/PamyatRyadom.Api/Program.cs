@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Services.Auth;
+using PamyatRyadom.Api.Services.BurialSites;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +88,9 @@ else
 
 builder.Services.AddSingleton<IMfaService, MfaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Burial sites: the client's own records, plus family access to them.
+builder.Services.AddScoped<IBurialSiteService, BurialSiteService>();
 
 // Rate limiting: policies are registered per-endpoint as modules land.
 builder.Services.AddRateLimiter(options =>
