@@ -2,6 +2,35 @@ services:
   api:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  # Local stand-in for the production object storage. Dev-only on purpose: production points
+  # Storage__* at a real S3-compatible bucket in a Russian region, and no MinIO runs there.
+  minio:
+    image: minio/minio:latest
+    container_name: pamyat-ryadom-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-pamyat_minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-change_me_minio}
+    ports:
+      # 9000 is the S3 API (the browser PUTs presigned uploads here, so it must be reachable
+      # from the host, not only from the compose network); 9001 is the MinIO console.
+      - "${MINIO_PORT:-9100}:9000"
+      - "${MINIO_CONSOLE_PORT:-9101}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - pamyat-ryadom
 
   adminer:
     image: adminer:latest
@@ -16,3 +45,6 @@ services:
         condition: service_healthy
     networks:
       - pamyat-ryadom
+
+volumes:
+  minio_data:

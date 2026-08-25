@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { MembersPanel } from "@/components/cabinet/MembersPanel";
+import { PhotoGallery } from "@/components/cabinet/PhotoGallery";
 import { LocationQualityBadge, LocationQualityHint } from "@/components/cabinet/LocationQualityNote";
 import { ApiError } from "@/lib/api/client";
 import { canManage, getBurialSite, listMembers } from "@/lib/api/burialSites";
+import { MEDIA_OWNER, listMedia } from "@/lib/api/media";
 import { getSessionCookieHeader } from "@/lib/auth/serverCookie";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +43,9 @@ export default async function BurialSitePage({ params }: { params: { id: string 
   }
 
   const members = await listMembers(id, cookieHeader).catch(() => []);
+  // Photos degrade to an empty gallery rather than failing the page: a storage hiccup should
+  // not hide the record itself, which is the part the client came for.
+  const photos = await listMedia(MEDIA_OWNER.burialSite, id, cookieHeader).catch(() => []);
   const manages = canManage(site.permission);
 
   return (
@@ -79,14 +84,7 @@ export default async function BurialSitePage({ params }: { params: { id: string 
         </dl>
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <h2 className="font-display text-xl font-normal text-ink-1">Фотографии</h2>
-        <p className="text-sm text-ink-2">
-          {site.photoCount > 0
-            ? `Загружено фотографий: ${site.photoCount}.`
-            : "Пока фотографий нет. Загрузка появится в следующем обновлении — снимки будут видны только вам и приглашённым родственникам."}
-        </p>
-      </Card>
+      <PhotoGallery siteId={site.id} initialPhotos={photos} canManage={manages} />
 
       <MembersPanel
         siteId={site.id}

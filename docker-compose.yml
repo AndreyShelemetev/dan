@@ -36,6 +36,19 @@ services:
       # writable layer, so any redeploy — or a second replica — makes every stored MFA secret
       # permanently undecryptable.
       DataProtection__KeyRingPath: /var/lib/pamyat-ryadom/dataprotection-keys
+      # Private S3-compatible bucket for photographs. In dev this points at the MinIO
+      # container from docker-compose.override.yml; in production it must point at a bucket
+      # in a Russian region — grave photos and coordinates are personal data under the
+      # localisation rule, and the bucket must never allow public reads.
+      Storage__Endpoint: ${S3_ENDPOINT:-http://minio:9000}
+      # Address presigned links are signed for. Differs from Storage__Endpoint in dev because
+      # the browser cannot resolve the compose hostname, and the host is part of the signature.
+      Storage__PublicEndpoint: ${S3_PUBLIC_ENDPOINT:-http://localhost:9100}
+      Storage__Bucket: ${S3_BUCKET:-pamyat-media}
+      Storage__AccessKey: ${S3_ACCESS_KEY:-pamyat_minio}
+      Storage__SecretKey: ${S3_SECRET_KEY:-change_me_minio}
+      Storage__Region: ${S3_REGION:-ru-central1}
+      Storage__UsePathStyle: ${S3_USE_PATH_STYLE:-true}
     ports:
       - "${API_PORT}:8080"
     volumes:

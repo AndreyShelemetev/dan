@@ -7,6 +7,7 @@ using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Services.Auth;
 using PamyatRyadom.Api.Services.BurialSites;
+using PamyatRyadom.Api.Services.Media;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,6 +93,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Burial sites: the client's own records, plus family access to them.
 builder.Services.AddScoped<IBurialSiteService, BurialSiteService>();
 
+// Media: private S3-compatible storage. Photographs are the product's core evidence, so the
+// bytes live outside the database and are only ever reachable through a short-lived signed URL.
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
+builder.Services.AddScoped<IMediaService, MediaService>();
+
 // Rate limiting: policies are registered per-endpoint as modules land.
 builder.Services.AddRateLimiter(options =>
 {
@@ -165,6 +172,14 @@ if (!keyRingIsConfigured && app.Environment.IsProduction())
         "DataProtection:KeyRingPath is not configured; using the non-durable fallback {KeyRingPath}. " +
         "Point DataProtection__KeyRingPath at persistent storage or stored MFA secrets will be lost on redeploy.",
         keyRingPath);
+}
+
+// Development convenience only: the MinIO container starts with no buckets, and having to create
+// one by hand before the first photo upload is pure friction. A production bucket is provisioned
+// deliberately — with its own access policy, lifecycle and retention — never by the app.
+if (app.Environment.IsDevelopment())
+{
+    await app.Services.GetRequiredService<IObjectStorage>().EnsureBucketAsync();
 }
 
 if (app.Environment.IsDevelopment())
