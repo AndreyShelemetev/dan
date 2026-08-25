@@ -6,7 +6,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { requestOtp, verifyOtp } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -22,8 +22,24 @@ function errorMessage(err: unknown): string {
   return "Что-то пошло не так. Попробуйте ещё раз.";
 }
 
+/**
+ * Where to land after a successful sign-in.
+ *
+ * middleware.ts puts the page the visitor was heading for into `?redirect=`.
+ * Only same-site paths are honoured: an absolute URL here would turn the login
+ * screen into an open redirect, which is exactly the shape a phishing link
+ * wants. Anything that is not a plain "/path" falls back to the cabinet.
+ */
+function safeRedirect(target: string | null): string {
+  if (!target || !target.startsWith("/") || target.startsWith("//")) {
+    return "/cabinet";
+  }
+  return target;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setUser } = useAuth();
 
   const [step, setStep] = useState<Step>("email");
@@ -53,7 +69,7 @@ export default function LoginPage() {
     try {
       const user = await verifyOtp(email, code);
       setUser(user);
-      router.push("/");
+      router.push(safeRedirect(searchParams.get("redirect")));
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));

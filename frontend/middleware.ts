@@ -7,7 +7,7 @@ import { AUTH_COOKIE_NAME } from "@/lib/auth/constants";
  * authenticated areas of the app exist. Anything not under these prefixes
  * is left untouched.
  */
-const PROTECTED_PREFIXES = ["/app", "/admin"];
+const PROTECTED_PREFIXES = ["/cabinet", "/admin"];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
@@ -42,5 +42,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/admin/:path*"],
+  matcher: ["/cabinet/:path*", "/admin/:path*"],
 };

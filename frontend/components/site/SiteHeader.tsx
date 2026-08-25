@@ -61,7 +61,13 @@ export function SiteHeader() {
                   {user.displayName}
                 </span>
               )}
-              <Button variant="secondary" size="sm" onClick={() => void logout()}>
+              {/* The primary action for a signed-in visitor is getting to their
+                  own records, not signing out — so the cabinet takes the filled
+                  pill and «Выйти» steps back to a quiet link. */}
+              <ButtonLink href="/cabinet" size="sm">
+                Кабинет
+              </ButtonLink>
+              <Button variant="ghost" size="sm" onClick={() => void logout()}>
                 Выйти
               </Button>
             </>
