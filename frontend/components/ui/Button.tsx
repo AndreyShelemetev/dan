@@ -9,8 +9,11 @@ export type ButtonSize = "sm" | "md" | "lg";
  * guidelines/radius-shadow.html. Every size clears the 44px tap target the
  * ТЗ requires for one-handed mobile use, so `min-h-hit` is unconditional.
  */
+// `scale-[0.96]` is the exact value better-ui prescribes for press feedback; anything lower
+// reads as exaggerated. It is layered on top of the colour change rather than replacing it, so
+// the state is still legible when reduced motion collapses the transition.
 const BASE =
-  "inline-flex min-h-hit items-center justify-center gap-2 whitespace-nowrap rounded-pill border font-sans font-semibold transition-colors duration-ds ease-ds disabled:pointer-events-none disabled:opacity-45";
+  "inline-flex min-h-hit items-center justify-center gap-2 whitespace-nowrap rounded-pill border font-sans font-semibold transition-[colors,scale] duration-ds ease-ds active:scale-[0.96] disabled:pointer-events-none disabled:opacity-45";
 
 /**
  * Every variant states its hover colour explicitly, including the ones whose text does not

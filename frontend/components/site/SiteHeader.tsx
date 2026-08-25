@@ -83,7 +83,7 @@ export function SiteHeader() {
             aria-controls="site-menu"
             aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
             onClick={() => setIsMenuOpen((open) => !open)}
-            className="-mr-2 inline-flex h-hit w-hit items-center justify-center rounded-card text-ink-1 transition-colors duration-ds ease-ds hover:text-accent-deep lg:hidden"
+            className="-me-2 inline-flex h-hit w-hit items-center justify-center rounded-card text-ink-1 transition-colors duration-ds ease-ds hover:text-accent-deep lg:hidden"
           >
             <MenuIcon isOpen={isMenuOpen} />
           </button>

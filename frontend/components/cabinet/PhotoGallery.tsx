@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
-import { Button } from "@/components/ui/Button";
+import { useState, type ChangeEvent } from "react";
+import { buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -32,7 +32,6 @@ export function PhotoGallery({
   const [photos, setPhotos] = useState(initialPhotos);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -94,20 +93,20 @@ export function PhotoGallery({
 
       {photos.length > 0 ? (
         <ul className="grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 lg:grid-cols-4">
-          {photos.map((photo) => (
+          {photos.map((photo, index) => (
             <li key={photo.id} className="group relative">
               <a
                 href={photo.url ?? "#"}
                 target="_blank"
                 rel="noreferrer"
-                className="block overflow-hidden rounded-card border border-border bg-surface-raised"
+                className="block overflow-hidden rounded-card bg-surface-raised outline outline-1 -outline-offset-1 outline-black/10"
               >
                 {/* Plain <img>: the source is a signed URL that expires, so Next's image
                     optimiser would cache a link that stops working. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo.thumbnailUrl ?? photo.url ?? ""}
-                  alt="Фотография места памяти"
+                  alt={`Фотография места памяти ${index + 1} из ${photos.length}`}
                   loading="lazy"
                   className="aspect-square w-full object-cover"
                 />
@@ -147,23 +146,31 @@ export function PhotoGallery({
 
       {canManage ? (
         <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+          {/* The file input is the real control and stays in the tab order; the styled <label>
+              is its visible face. Driving a visually hidden input from a separate button left it
+              focusable with no accessible name — a screen reader announced "file upload" and
+              nothing else. `peer-focus-visible` moves the focus ring onto the label, since the
+              input itself has no visible box to draw one around. */}
           <input
-            ref={inputRef}
             type="file"
             accept={ACCEPTED_IMAGE_TYPES.join(",")}
             multiple
             onChange={handleFiles}
-            className="sr-only"
+            disabled={pending > 0}
+            className="peer sr-only"
             id="photo-input"
           />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={pending > 0}
-            onClick={() => inputRef.current?.click()}
+          <label
+            htmlFor="photo-input"
+            className={buttonClasses({
+              variant: "secondary",
+              size: "sm",
+              className:
+                "cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:pointer-events-none peer-disabled:opacity-45",
+            })}
           >
             {pending > 0 ? "Загружаем…" : "Добавить фотографии"}
-          </Button>
+          </label>
           <span className="text-xs text-ink-2">
             JPEG, PNG, WebP или HEIC, до {MAX_UPLOAD_BYTES / (1024 * 1024)} МБ
           </span>

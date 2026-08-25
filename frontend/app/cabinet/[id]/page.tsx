@@ -51,7 +51,7 @@ export default async function BurialSitePage({ params }: { params: { id: string 
   return (
     <div className="flex flex-col gap-8">
       <p className="text-sm">
-        <Link href="/cabinet" className="text-ink-2 hover:text-accent-deep">
+        <Link href="/cabinet" className="inline-flex min-h-hit items-center text-ink-2 hover:text-accent-deep">
           ← Мои места памяти
         </Link>
       </p>

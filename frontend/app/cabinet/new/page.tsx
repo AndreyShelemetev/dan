@@ -33,7 +33,7 @@ export default async function NewBurialSitePage() {
       <NewBurialSiteForm cemeteries={cemeteries} />
 
       <p className="text-sm">
-        <Link href="/cabinet" className="text-ink-2 hover:text-accent-deep">
+        <Link href="/cabinet" className="inline-flex min-h-hit items-center text-ink-2 hover:text-accent-deep">
           ← Вернуться к списку
         </Link>
       </p>

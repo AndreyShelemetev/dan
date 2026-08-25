@@ -115,6 +115,33 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
 - Executor payout amounts and margins are commercially confidential — they must never leak into
   user-facing content (client-visible order pages, dispute text, notifications).
 
+## Interface quality (`skills-main/`)
+
+`skills-main/skills/` holds a set of interface skills that apply to **every** change touching
+`frontend/`. Read the relevant `SKILL.md` before writing UI, not after.
+
+- `better-accessibility` — focus, keyboard, ARIA, hit areas, motion, forms
+- `better-layout` — grouping, alignment, reading order, breakpoints, logical properties
+- `better-writing` — labels, errors, empty states, capitalization, voice
+- `better-typography` — scale, line-height, measure, wrapping, truncation
+- `better-colors` — token roles, ramps, measured contrast
+- `better-ui` — radius, shadows, icons, motion values
+- `better-interface` — coordinates all six for a whole-screen review
+- `interface-review` — user-invoked review of a change; never start it unprompted
+
+Rules that decide work here:
+
+- **Escalation triggers are `HIGH` on sight** — a control with no accessible name, a keyboard-
+  reachable control with no visible focus ring, content clipped at 320px or 200% zoom, text
+  failing its contrast ratio, meaning carried by colour alone, an error naming no way to recover.
+- **Evidence, not taste.** Report what you measured, with `path/to/file:line`. Never quote a
+  contrast ratio you did not compute or a visual claim you did not inspect in a browser.
+- **Prefer the cheaper fix**, in order: delete → use the platform → reuse an existing token →
+  correct the value → add something new. A new wrapper where a deletion would do is its own bug.
+- **One root cause is one finding.** Fix it at the token or shared component, not per occurrence.
+- Domain skills own their rules. Values in them are exact (`scale(0.96)`, not `0.95`); use them
+  as written rather than a familiar-looking substitute.
+
 ## Commands
 
 Backend (`backend/`):
