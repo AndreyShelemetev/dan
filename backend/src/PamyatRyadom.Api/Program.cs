@@ -7,6 +7,7 @@ using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Services.Auth;
 using PamyatRyadom.Api.Services.BurialSites;
+using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -87,6 +88,10 @@ else
 {
     builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 }
+
+// Published legal documents: the single place their versions are declared, so an acceptance
+// recorded today still identifies the exact text that was in force.
+builder.Services.AddSingleton<ILegalDocumentRegistry, LegalDocumentRegistry>();
 
 builder.Services.AddSingleton<IMfaService, MfaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

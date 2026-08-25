@@ -106,23 +106,33 @@ public sealed class OtpVerifyTests : AuthIntegrationTest
         var consent = await factory.QueryDbAsync(db => db.ConsentLogs.SingleAsync());
         Assert.Equal(user.Id, consent.UserId);
         Assert.Equal(ConsentTypes.PersonalData, consent.ConsentType);
-        Assert.Equal("v0-draft", consent.DocumentVersion);
+        // The published privacy-policy version, not the old placeholder: what a person consented
+        // to has to identify the text that was actually in force.
+        Assert.Equal("1.0", consent.DocumentVersion);
         Assert.Equal(Email, consent.Email);
         Assert.Null(consent.Phone);
         Assert.Null(consent.RevokedAt);
         Assert.NotEqual(default, consent.AcceptedAt);
 
-        // Terms acceptance is tracked against the versioned document, not in the consent log.
-        var document = await factory.QueryDbAsync(db => db.LegalDocuments.SingleAsync());
-        Assert.Equal(LegalDocumentTypes.OfertaClient, document.Type);
-        Assert.Equal("v0-draft", document.Version);
-        Assert.Equal("ru", document.Locale);
-        Assert.Equal(LegalDocumentStatuses.Draft, document.Status);
+        // Document acceptance is tracked against the versioned rows, not in the consent log.
+        var documents = await factory.QueryDbAsync(db => db.LegalDocuments.ToListAsync());
+        Assert.All(documents, d =>
+        {
+            Assert.Equal("1.0", d.Version);
+            Assert.Equal("ru", d.Locale);
+            Assert.Equal(LegalDocumentStatuses.Published, d.Status);
+        });
 
-        var acceptance = await factory.QueryDbAsync(db => db.LegalAcceptances.SingleAsync());
-        Assert.Equal(user.Id, acceptance.UserId);
-        Assert.Equal(document.Id, acceptance.DocumentId);
-        Assert.Null(acceptance.RevokedAt);
+        // One acceptance per required instrument: the policy and the consent are separate under
+        // 152-ФЗ, so a single combined row would lose which was shown.
+        var acceptances = await factory.QueryDbAsync(db => db.LegalAcceptances.ToListAsync());
+        Assert.Equal(2, acceptances.Count);
+        Assert.All(acceptances, a =>
+        {
+            Assert.Equal(user.Id, a.UserId);
+            Assert.Null(a.RevokedAt);
+            Assert.Contains(a.DocumentId, documents.Select(d => d.Id));
+        });
     }
 
     [Fact]
@@ -159,9 +169,11 @@ public sealed class OtpVerifyTests : AuthIntegrationTest
 
         Assert.Equal(1, await factory.QueryDbAsync(db => db.Users.CountAsync()));
         Assert.Equal(1, await factory.QueryDbAsync(db => db.AuthIdentities.CountAsync()));
+        // Still exactly what registration wrote: one personal-data consent, one acceptance per
+        // required instrument. Signing in again is not a new consent event.
         Assert.Equal(1, await factory.QueryDbAsync(db => db.ConsentLogs.CountAsync()));
-        Assert.Equal(1, await factory.QueryDbAsync(db => db.LegalAcceptances.CountAsync()));
-        Assert.Equal(1, await factory.QueryDbAsync(db => db.LegalDocuments.CountAsync()));
+        Assert.Equal(2, await factory.QueryDbAsync(db => db.LegalAcceptances.CountAsync()));
+        Assert.Equal(3, await factory.QueryDbAsync(db => db.LegalDocuments.CountAsync()));
 
         // A second login is a second session; the first one is left alone.
         Assert.Equal(2, await factory.QueryDbAsync(db => db.AuthSessions.CountAsync(x => x.RevokedAt == null)));

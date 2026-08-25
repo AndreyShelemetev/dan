@@ -44,10 +44,19 @@ export function requestOtp(
  * cookie as a side effect of this response and returns the now-authenticated
  * user.
  */
-export function verifyOtp(destination: string, code: string): Promise<AuthUser> {
+/**
+ * `acceptedLegal` is the consent the person gave on the form. The backend only enforces it when
+ * the verification would create an account — a returning user consented once, at registration,
+ * and that record is the one that counts.
+ */
+export function verifyOtp(
+  destination: string,
+  code: string,
+  acceptedLegal: boolean,
+): Promise<AuthUser> {
   return apiFetch<OtpVerifyResponse>("/auth/otp/verify", {
     method: "POST",
-    body: { destination, code, channel: "email" },
+    body: { destination, code, channel: "email", acceptedLegal },
   }).then((res) => res.user);
 }
 

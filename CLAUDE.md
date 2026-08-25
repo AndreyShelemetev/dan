@@ -119,6 +119,25 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
 - Executor payout amounts and margins are commercially confidential — they must never leak into
   user-facing content (client-visible order pages, dispute text, notifications).
 
+## Legal & consent
+
+- Operator: АО «Гибкие технологии работы», ИНН 1200018705, ОГРН 1251200001580. Requisites live
+  in one place — `frontend/lib/legal/company.ts` — because they appear in four documents and the
+  footer, and requisites that disagree between them are worse than requisites in one.
+  **КПП and the registered address are still missing** and must be added before production.
+- Published document versions are declared in `Services/Legal/LegalDocumentRegistry.cs`; the
+  wording lives in `frontend/app/legal/`. **Editing the text means bumping the version in the
+  same change** — text changed without a new version silently rewrites what past users are
+  recorded as having agreed to. A published version is never edited (BR-016), only superseded.
+- The privacy policy and the consent are separate instruments under 152-ФЗ: registration records
+  a `LegalAcceptance` for each, plus a `ConsentLog(personal_data)`. Never collapse them into one
+  "agreed to everything".
+- Registration without consent is refused **server-side** (`legal_not_accepted`), not only by the
+  form. Returning users are unaffected — they consented at registration.
+- Cookie choices are recorded in `consent_logs` including refusals: "asked and declined" is a
+  materially different fact from "never asked", and a value living only in the visitor's browser
+  proves nothing.
+
 ## Interface quality (`skills-main/`)
 
 `skills-main/skills/` holds a set of interface skills that apply to **every** change touching

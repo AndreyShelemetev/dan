@@ -97,8 +97,16 @@ public abstract class AuthIntegrationTest : IAsyncLifetime
     protected static object OtpRequest(string destination, string channel = OtpChannels.Email, string? purpose = null) =>
         new { destination, channel, purpose };
 
-    protected static object OtpVerify(string destination, string code, string channel = OtpChannels.Email, string? purpose = null) =>
-        new { destination, channel, purpose, code };
+    /// <summary>`acceptedLegal` defaults to true because almost every test is about something
+    /// else and needs the account to come into existence. Tests of the consent gate itself pass
+    /// false explicitly.</summary>
+    protected static object OtpVerify(
+        string destination,
+        string code,
+        string channel = OtpChannels.Email,
+        string? purpose = null,
+        bool acceptedLegal = true) =>
+        new { destination, channel, purpose, code, acceptedLegal };
 
     /// <summary>Requests a login code and returns it, read out of the captured email.</summary>
     protected static async Task<string> RequestCodeAsync(PamyatApiFactory factory, ApiClient client, string email)

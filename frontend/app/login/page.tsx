@@ -5,6 +5,7 @@
 // RU/EN switching is a follow-up task, not part of this scaffolding.
 
 import { useState, type FormEvent } from "react";
+import type { ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getDevOtp, requestOtp, verifyOtp } from "@/lib/api/auth";
@@ -52,9 +53,25 @@ export default function LoginPage() {
   // Everywhere else the endpoint is absent and this stays null, so the hint never renders.
   const [devCode, setDevCode] = useState<string | null>(null);
 
+  // Never pre-ticked: a consent the person did not actively give is not a consent. Held on the
+  // first step because that is where the flow is entered, and the same form both signs in and
+  // registers — the browser cannot know which until the code is verified.
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+
   async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
     setError(null);
+
+    if (!acceptedLegal) {
+      // Validated on submit rather than by disabling the button: a disabled control gives no
+      // reason, and the reason is the useful part.
+      setConsentError("Отметьте согласие, чтобы продолжить.");
+      document.getElementById("accept-legal")?.focus();
+      return;
+    }
+
+    setConsentError(null);
     setIsSubmitting(true);
     try {
       await requestOtp(email);
@@ -72,7 +89,7 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const user = await verifyOtp(email, code);
+      const user = await verifyOtp(email, code, acceptedLegal);
       setUser(user);
       router.push(safeRedirect(searchParams.get("redirect")));
       router.refresh();
@@ -118,6 +135,15 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
+            />
+
+            <LegalConsentCheckbox
+              checked={acceptedLegal}
+              error={consentError}
+              onChange={(event) => {
+                setAcceptedLegal(event.target.checked);
+                if (event.target.checked) setConsentError(null);
+              }}
             />
 
             {error && <FormError message={error} />}
@@ -168,6 +194,59 @@ export default function LoginPage() {
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * The consent gate on registration.
+ *
+ * The label wraps the control so the whole line is one hit target with no dead zone between the
+ * box and its text. The two documents are separate instruments under 152-ФЗ — a policy the
+ * operator publishes, and a consent the person gives — so both are named and both are reachable
+ * before agreeing, rather than folded into one "я согласен со всем".
+ */
+function LegalConsentCheckbox({
+  checked,
+  error,
+  onChange,
+}: {
+  checked: boolean;
+  error: string | null;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="accept-legal" className="flex cursor-pointer items-start gap-3 text-sm text-ink-2">
+        <input
+          id="accept-legal"
+          name="acceptLegal"
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "accept-legal-error" : undefined}
+          // 24px, the WCAG 2.5.8 baseline. The wrapping label already makes the whole line a
+          // target, but a box that measures under the minimum invites the question every time.
+          className="mt-0.5 size-6 shrink-0 accent-[color:var(--accent)]"
+        />
+        <span>
+          Я даю{" "}
+          <Link href="/legal/consent/" className="text-accent hover:text-accent-deep">
+            согласие на обработку персональных данных
+          </Link>{" "}
+          и принимаю{" "}
+          <Link href="/legal/privacy/" className="text-accent hover:text-accent-deep">
+            политику обработки персональных данных
+          </Link>
+          .
+        </span>
+      </label>
+      {error ? (
+        <p id="accept-legal-error" role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

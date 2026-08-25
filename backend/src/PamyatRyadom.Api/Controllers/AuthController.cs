@@ -60,6 +60,7 @@ public sealed class AuthController : AuthorizedControllerBase
             request.Channel,
             request.Purpose,
             request.Code,
+            request.AcceptedLegal,
             BuildContext(),
             ct);
 

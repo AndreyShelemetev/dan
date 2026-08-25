@@ -22,6 +22,7 @@ public interface IAuthService
         string? channel,
         string? purpose,
         string? code,
+        bool acceptedLegal,
         AuthRequestContext context,
         CancellationToken ct = default);
 

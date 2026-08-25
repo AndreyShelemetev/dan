@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Manrope, Spectral } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { CookieBanner } from "@/components/legal/CookieBanner";
 import { getServerUser } from "@/lib/auth/server";
 
 /**
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           Перейти к содержимому
         </a>
         <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
+        <CookieBanner />
       </body>
     </html>
   );

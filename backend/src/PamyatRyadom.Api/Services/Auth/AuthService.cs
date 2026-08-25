@@ -11,6 +11,8 @@ using PamyatRyadom.Api.Dtos.Auth;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Models.Auth;
 
+using PamyatRyadom.Api.Services.Legal;
+
 namespace PamyatRyadom.Api.Services.Auth;
 
 /// <summary>Passwordless (OTP) login, opaque session lifecycle, and TOTP enrollment.
@@ -23,13 +25,6 @@ namespace PamyatRyadom.Api.Services.Auth;
 /// </summary>
 public sealed class AuthService : IAuthService
 {
-    /// <summary>Version stamped on the consent/acceptance records written at registration. Real legal
-    /// versioning (published documents, re-consent on a new version) is a separate task.</summary>
-    private const string PlaceholderDocumentVersion = "v0-draft";
-
-    /// <summary>The document a client accepts at registration. Executors are onboarded through a
-    /// different flow and accept <see cref="LegalDocumentTypes.OfertaExecutor"/> there.</summary>
-    private const string RegistrationTermsDocumentType = LegalDocumentTypes.OfertaClient;
 
     private const int UserAgentMaxLength = 512;
 
@@ -44,6 +39,7 @@ public sealed class AuthService : IAuthService
     private readonly IEmailSender _emailSender;
     private readonly IMfaService _mfa;
     private readonly IHostEnvironment _environment;
+    private readonly ILegalDocumentRegistry _legal;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -52,6 +48,7 @@ public sealed class AuthService : IAuthService
         IEmailSender emailSender,
         IMfaService mfa,
         IHostEnvironment environment,
+        ILegalDocumentRegistry legal,
         ILogger<AuthService> logger)
     {
         _db = db;
@@ -59,6 +56,7 @@ public sealed class AuthService : IAuthService
         _emailSender = emailSender;
         _mfa = mfa;
         _environment = environment;
+        _legal = legal;
         _logger = logger;
     }
 
@@ -147,6 +145,7 @@ public sealed class AuthService : IAuthService
         string? channel,
         string? purpose,
         string? code,
+        bool acceptedLegal,
         AuthRequestContext context,
         CancellationToken ct = default)
     {
@@ -218,10 +217,28 @@ public sealed class AuthService : IAuthService
 
         if (isNewUser)
         {
+            // The consent gate, enforced here rather than in the form. A tick box in the browser
+            // stops nobody from posting to this endpoint directly, and an account created without
+            // a recorded consent has no lawful ground under 152-ФЗ.
+            //
+            // Only new accounts are gated: a returning user consented when their account was
+            // created, and that record is what stands.
+            if (!acceptedLegal)
+            {
+                AddAuditLog(SecurityAuditEventTypes.LoginFailed, context, new { reason = "legal_not_accepted" });
+                await _db.SaveChangesAsync(ct);
+
+                return AuthServiceResult<VerifiedOtpResult>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    ApiError.Of(
+                        "legal_not_accepted",
+                        "Чтобы создать аккаунт, подтвердите согласие на обработку персональных данных."));
+            }
+
             // Reference data, so it is ensured (and committed) before the registration write below —
             // keeping it out of that transaction means a concurrent first registration can't turn a
-            // unique-index conflict on the placeholder document into a failed login.
-            var termsDocumentId = await EnsurePlaceholderLegalDocumentAsync(RegistrationTermsDocumentType, ct);
+            // unique-index conflict into a failed login.
+            var documents = await _legal.EnsurePublishedAsync(_db, ct);
 
             user = new User
             {
@@ -241,7 +258,7 @@ public sealed class AuthService : IAuthService
 
             user.AuthIdentities.Add(identity);
             _db.Users.Add(user);
-            AddRegistrationConsent(user, identity, context, termsDocumentId);
+            AddRegistrationConsent(user, identity, context, documents);
         }
 
         if (user!.Status != UserStatuses.Active)
@@ -638,7 +655,11 @@ public sealed class AuthService : IAuthService
     /// logged in <see cref="ConsentLog"/>, and the client offer, logged as a
     /// <see cref="LegalAcceptance"/> against the versioned document — the split the entity model
     /// prescribes. Consent is by conclusive action: the login form states both above the submit button.</summary>
-    private void AddRegistrationConsent(User user, AuthIdentity identity, AuthRequestContext context, long termsDocumentId)
+    private void AddRegistrationConsent(
+        User user,
+        AuthIdentity identity,
+        AuthRequestContext context,
+        IReadOnlyDictionary<string, LegalDocument> documents)
     {
         var ip = context.IpAddress ?? System.Net.IPAddress.None;
         var userAgent = Truncate(context.UserAgent, UserAgentMaxLength);
@@ -650,71 +671,32 @@ public sealed class AuthService : IAuthService
             Email = identity.Email,
             Phone = identity.Phone,
             ConsentType = ConsentTypes.PersonalData,
-            DocumentVersion = PlaceholderDocumentVersion,
+            DocumentVersion = documents.TryGetValue(LegalDocumentTypes.Privacy, out var privacy)
+                ? privacy.Version
+                : "unknown",
             IpAddress = ip,
             UserAgent = userAgent,
             AcceptedAt = now
         });
 
-        _db.LegalAcceptances.Add(new LegalAcceptance
+        // One acceptance row per required document. The policy and the consent are separate
+        // instruments under 152-ФЗ, so recording a single combined "agreed" would lose which of
+        // them the person was actually shown.
+        foreach (var definition in _legal.RequiredForRegistration)
         {
-            User = user,
-            DocumentId = termsDocumentId,
-            IpAddress = ip,
-            UserAgent = userAgent,
-            AcceptedAt = now
-        });
-    }
-
-    /// <summary>Returns the id of the placeholder document of <paramref name="type"/>, creating it on
-    /// first use so registration always has something to attach an acceptance to. Real content and
-    /// versioning land in the Legal task.</summary>
-    private async Task<long> EnsurePlaceholderLegalDocumentAsync(string type, CancellationToken ct)
-    {
-        var existing = await _db.LegalDocuments
-            .Where(x => x.Type == type && x.Version == PlaceholderDocumentVersion && x.Locale == "ru")
-            .Select(x => (long?)x.Id)
-            .FirstOrDefaultAsync(ct);
-
-        if (existing is not null)
-        {
-            return existing.Value;
-        }
-
-        var document = new LegalDocument
-        {
-            Type = type,
-            Version = PlaceholderDocumentVersion,
-            Locale = "ru",
-            ContentHash = SecretHasher.HashHighEntropy($"{type}:{PlaceholderDocumentVersion}"),
-            EffectiveAt = DateTimeOffset.UtcNow,
-            Status = LegalDocumentStatuses.Draft
-        };
-
-        _db.LegalDocuments.Add(document);
-
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-            return document.Id;
-        }
-        catch (DbUpdateException)
-        {
-            // Two first-ever registrations raced; the unique index kept exactly one. Drop ours and use
-            // the winner's row.
-            _db.Entry(document).State = EntityState.Detached;
-
-            var winner = await _db.LegalDocuments
-                .Where(x => x.Type == type && x.Version == PlaceholderDocumentVersion && x.Locale == "ru")
-                .Select(x => (long?)x.Id)
-                .FirstOrDefaultAsync(ct);
-
-            if (winner is null)
+            if (!documents.TryGetValue(definition.Type, out var document))
             {
-                throw;
+                continue;
             }
 
-            return winner.Value;
+            _db.LegalAcceptances.Add(new LegalAcceptance
+            {
+                User = user,
+                DocumentId = document.Id,
+                IpAddress = ip,
+                UserAgent = userAgent,
+                AcceptedAt = now
+            });
         }
     }
 
