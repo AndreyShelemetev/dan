@@ -290,8 +290,8 @@ public sealed class BurialSiteAccessTests : AuthIntegrationTest
             var cemetery = new Cemetery
             {
                 Name = "Северное кладбище",
-                Region = "Санкт-Петербург",
-                Address = "пос. Парголово",
+                Region = "Москва",
+                Address = "Хованское шоссе",
             };
 
             db.Cemeteries.Add(cemetery);

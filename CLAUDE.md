@@ -8,6 +8,10 @@ repairs — and an executor visits the cemetery and files a photo/video report t
 It is a managed service, not an open marketplace: clients never pick or contact executors
 directly, dispatch assigns the work.
 
+Geography is national, prioritising large cities — not a single-city pilot. Nothing in the
+product may assume one city: the cemetery directory is grouped by region, and user-facing copy
+says "в городах России" rather than naming a city.
+
 First MVP: order a visit for a known burial site, get it dispatched to an executor, see photo
 proof of completion, pay online, raise a dispute if the result is unsatisfactory.
 

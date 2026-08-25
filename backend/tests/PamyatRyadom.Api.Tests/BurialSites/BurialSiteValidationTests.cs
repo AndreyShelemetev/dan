@@ -174,7 +174,7 @@ public sealed class BurialSiteValidationTests : AuthIntegrationTest
         long cemeteryId = 0;
         await factory.WithDbAsync(async db =>
         {
-            var cemetery = new Cemetery { Name = "Южное кладбище", Region = "Санкт-Петербург" };
+            var cemetery = new Cemetery { Name = "Южное кладбище", Region = "Екатеринбург" };
             db.Cemeteries.Add(cemetery);
             await db.SaveChangesAsync();
             cemeteryId = cemetery.Id;

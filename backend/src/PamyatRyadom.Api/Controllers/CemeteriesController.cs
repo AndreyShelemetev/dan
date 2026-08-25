@@ -30,7 +30,10 @@ public sealed class CemeteriesController : ControllerBase
         var items = await _db.Cemeteries
             .AsNoTracking()
             .Where(c => c.Status == CemeteryStatuses.Active)
-            .OrderBy(c => c.Name)
+            // Region first: the directory is national, so a client scans for their city before
+            // they scan for a cemetery name.
+            .OrderBy(c => c.Region)
+            .ThenBy(c => c.Name)
             .Select(c => new CemeteryDto
             {
                 Id = c.Id,

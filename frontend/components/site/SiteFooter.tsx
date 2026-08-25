@@ -16,7 +16,7 @@ export function SiteFooter() {
       aria-label="Служебная информация"
     >
       <div className="mx-auto flex w-full max-w-content flex-col gap-4 px-6 py-7 text-sm text-ink-2 sm:flex-row sm:items-center sm:justify-between lg:px-14">
-        <p>© 2026 Память рядом · Санкт-Петербург</p>
+        <p>© 2026 Память рядом</p>
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           {LEGAL_ITEMS.map((item) => (
             <li key={item}>{item}</li>

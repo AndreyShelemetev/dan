@@ -8,6 +8,18 @@ import { Field } from "@/components/ui/Field";
 import { ApiError } from "@/lib/api/client";
 import { createBurialSite, type Cemetery } from "@/lib/api/burialSites";
 
+/** Cemeteries grouped by region, preserving the order the API returned them in. */
+function groupByRegion(cemeteries: Cemetery[]): [string, Cemetery[]][] {
+  const groups = new Map<string, Cemetery[]>();
+  for (const cemetery of cemeteries) {
+    const key = cemetery.region?.trim() || "Другие города";
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(cemetery);
+    else groups.set(key, [cemetery]);
+  }
+  return [...groups.entries()];
+}
+
 /**
  * Create form for a burial site.
  *
@@ -112,11 +124,18 @@ export function NewBurialSiteForm({ cemeteries }: { cemeteries: Cemetery[] }) {
             <option value="" disabled>
               Выберите из списка
             </option>
-            {cemeteries.map((cemetery) => (
-              <option key={cemetery.id} value={cemetery.id}>
-                {cemetery.name}
-                {cemetery.region ? ` — ${cemetery.region}` : ""}
-              </option>
+            {/* Grouped by region rather than listed flat: the service works across the country,
+                so a flat list stops being scannable as soon as more than one city is served.
+                <optgroup> is the browser's own grouping — it reads correctly to a screen reader
+                and needs no custom component. */}
+            {groupByRegion(cemeteries).map(([region, items]) => (
+              <optgroup key={region} label={region}>
+                {items.map((cemetery) => (
+                  <option key={cemetery.id} value={cemetery.id}>
+                    {cemetery.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           {fieldErrors.cemeteryId ? (
