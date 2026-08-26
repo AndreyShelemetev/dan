@@ -7,6 +7,8 @@ using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Services.Auth;
 using PamyatRyadom.Api.Services.BurialSites;
+using PamyatRyadom.Api.Services.Catalog;
+using PamyatRyadom.Api.Services.Dev;
 using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
 
@@ -105,6 +107,15 @@ builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(Stor
 builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 
+// Catalog: what is sold. The seeder only inserts versions that are missing, so it can run on
+// every start without rewriting terms an order was already sold under.
+builder.Services.AddScoped<ICatalogSeeder, CatalogSeeder>();
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<IDevAccountSeeder, DevAccountSeeder>();
+}
+
 // Rate limiting: policies are registered per-endpoint as modules land.
 builder.Services.AddRateLimiter(options =>
 {
@@ -186,6 +197,25 @@ if (!keyRingIsConfigured && app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     await app.Services.GetRequiredService<IObjectStorage>().EnsureBucketAsync();
+}
+
+// Reference data. Wrapped so a database that is not migrated yet cannot stop the API from
+// starting — the health endpoint must stay up for the deploy to be diagnosable.
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        await scope.ServiceProvider.GetRequiredService<ICatalogSeeder>().SeedAsync();
+
+        if (app.Environment.IsDevelopment())
+        {
+            await scope.ServiceProvider.GetRequiredService<IDevAccountSeeder>().SeedAsync();
+        }
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogWarning(exception, "Reference data seeding skipped");
+    }
 }
 
 if (app.Environment.IsDevelopment())

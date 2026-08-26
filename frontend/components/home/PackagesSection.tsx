@@ -1,37 +1,29 @@
 import { Card } from "@/components/ui/Card";
+import { formatRub, type ServicePackage } from "@/lib/api/catalog";
 
 /**
- * The three care packages, per direction-a.dc.html — names, descriptions,
- * visit counts and «от …» prices are verbatim from the design.
+ * The care packages, read from the catalogue rather than hardcoded.
  *
- * Money follows guidelines/formatting.html: a thin space (U+2009) between
- * thousands and a non-breaking space (U+00A0) before ₽, so a price never wraps
- * away from its unit. These are public "from" prices only — no executor payout
- * or margin data appears on any client-facing surface.
+ * Money follows guidelines/formatting.html: a thin space (U+2009) between thousands and a
+ * non-breaking space (U+00A0) before ₽, so a price never wraps away from its unit. These are
+ * public "from" prices only — no executor payout or margin data appears on any client-facing
+ * surface.
+ *
+ * Limits are rendered on the card, not tucked behind a tooltip: the product promise is that a
+ * client learns what is *not* covered before paying, and the business concept names hidden
+ * extras as the single biggest fear this service has to answer.
  */
-const PACKAGES = [
-  {
-    name: "Базовый уход",
-    description:
-      "Уборка участка, очистка памятника, вынос мусора и фотоотчёт по обязательным ракурсам.",
-    term: "1 визит",
-    price: "от 4 900 ₽",
-  },
-  {
-    name: "Сезонный уход",
-    description: "Подготовка к сезону: прополка, подсыпка, мытьё, мелкий ремонт по согласованию.",
-    term: "1–2 визита",
-    price: "от 8 400 ₽",
-  },
-  {
-    name: "Уход с цветами",
-    description: "Базовый уход и живые цветы или композиция к памятной дате.",
-    term: "1 визит",
-    price: "от 6 200 ₽",
-  },
-] as const;
+function price(value: number): string {
+  return `от ${formatRub(value).replace(/\s/g, " ")} ₽`;
+}
 
-export function PackagesSection() {
+export function PackagesSection({ packages }: { packages: ServicePackage[] }) {
+  if (packages.length === 0) {
+    // The catalogue is reference data and should never be empty, but a failed fetch must not
+    // leave a headless section on the page.
+    return null;
+  }
+
   return (
     <section
       id="services"
@@ -42,19 +34,34 @@ export function PackagesSection() {
         Услуги
       </h2>
 
-      <ul className="grid gap-6 md:grid-cols-3">
-        {PACKAGES.map((pkg) => (
-          <Card key={pkg.name} as="li" className="flex flex-col">
-            <h3 className="font-display text-lg font-normal text-ink-1">{pkg.name}</h3>
-            <p className="mb-6 mt-2 text-sm leading-relaxed text-ink-2">{pkg.description}</p>
+      <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {packages.map((pkg) => (
+          <Card key={pkg.code} as="li" className="flex flex-col">
+            <h3 className="font-display text-lg font-normal text-ink-1">{pkg.title}</h3>
+            <p className="mb-5 mt-2 text-sm leading-relaxed text-ink-2">{pkg.summary}</p>
+
+            {pkg.limits.length > 0 ? (
+              <ul className="mb-5 flex list-none flex-col gap-1 p-0 text-xs text-ink-2">
+                {pkg.limits.map((limit) => (
+                  <li key={limit} className="flex gap-2">
+                    {/* Decorative: the meaning is in the text beside it, and a screen reader
+                        reading "bullet" before every limit adds nothing. */}
+                    <span aria-hidden="true">·</span>
+                    <span>{limit}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             {/*
-              flex-wrap + nowrap on both cells: when the card is too narrow for
-              term and price side by side (3 columns at ~768px), the price drops
-              to its own line instead of breaking «от 8 400 ₽» across lines.
+              flex-wrap + nowrap on both cells: when the card is too narrow for term and price
+              side by side, the price drops to its own line instead of breaking «от 8 400 ₽».
             */}
             <div className="mt-auto flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-border pt-5">
-              <span className="whitespace-nowrap text-sm text-ink-2">{pkg.term}</span>
-              <span className="whitespace-nowrap font-display text-lg text-ink-1">{pkg.price}</span>
+              <span className="whitespace-nowrap text-sm text-ink-2">{pkg.visitsLabel}</span>
+              <span className="whitespace-nowrap font-display text-lg text-ink-1">
+                {price(pkg.priceFromRub)}
+              </span>
             </div>
           </Card>
         ))}

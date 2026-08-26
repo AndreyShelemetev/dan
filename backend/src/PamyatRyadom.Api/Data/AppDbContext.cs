@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PamyatRyadom.Api.Models.Auth;
 using PamyatRyadom.Api.Models.BurialSites;
+using PamyatRyadom.Api.Models.Catalog;
 using PamyatRyadom.Api.Models.Media;
 
 namespace PamyatRyadom.Api.Data;
@@ -39,6 +40,10 @@ public sealed class AppDbContext : DbContext
 
     // Media: metadata only — the bytes live in a private S3-compatible bucket.
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+
+    // Catalog: what is sold, versioned so an order can bind to the exact terms it was sold under.
+    public DbSet<ServicePackage> ServicePackages => Set<ServicePackage>();
+    public DbSet<ChecklistTemplate> ChecklistTemplates => Set<ChecklistTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
