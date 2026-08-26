@@ -35,8 +35,14 @@ public static class SecurityAuditEventTypes
     public const string MfaEnrolled = "mfa_enrolled";
     public const string MfaVerified = "mfa_verified";
 
+    /// <summary>A catalogue change: package or plan created, edited, published or archived.
+    /// Prices and composition are commercial terms, and "who changed this, and when" is a
+    /// question asked during a dispute rather than during development.</summary>
+    public const string CatalogChanged = "catalog_changed";
+
     public static readonly IReadOnlyCollection<string> All = new[]
     {
-        LoginSuccess, LoginFailed, Logout, OtpRequested, SessionRevoked, RoleChanged, MfaEnrolled, MfaVerified
+        LoginSuccess, LoginFailed, Logout, OtpRequested, SessionRevoked, RoleChanged, MfaEnrolled,
+        MfaVerified, CatalogChanged
     };
 }

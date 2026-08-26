@@ -44,6 +44,7 @@ public sealed class AppDbContext : DbContext
     // Catalog: what is sold, versioned so an order can bind to the exact terms it was sold under.
     public DbSet<ServicePackage> ServicePackages => Set<ServicePackage>();
     public DbSet<ChecklistTemplate> ChecklistTemplates => Set<ChecklistTemplate>();
+    public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -110,6 +110,7 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 // Catalog: what is sold. The seeder only inserts versions that are missing, so it can run on
 // every start without rewriting terms an order was already sold under.
 builder.Services.AddScoped<ICatalogSeeder, CatalogSeeder>();
+builder.Services.AddScoped<ICatalogAdminService, CatalogAdminService>();
 
 if (builder.Environment.IsDevelopment())
 {

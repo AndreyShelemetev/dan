@@ -77,3 +77,44 @@ internal sealed class ChecklistTemplateConfiguration : IEntityTypeConfiguration<
             .HasDatabaseName("ux_checklist_templates_package");
     }
 }
+
+internal sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<SubscriptionPlan>
+{
+    public void Configure(EntityTypeBuilder<SubscriptionPlan> b)
+    {
+        b.ToTable("subscription_plans", t =>
+        {
+            t.HasCheckConstraint(
+                "ck_subscription_plans_status",
+                DbConstraintHelpers.InListCheck("status", ServicePackageStatuses.All));
+
+            t.HasCheckConstraint("ck_subscription_plans_price", "price_rub > 0");
+            t.HasCheckConstraint("ck_subscription_plans_visits", "visits_total > 0");
+            t.HasCheckConstraint("ck_subscription_plans_period", "period_months > 0");
+            t.HasCheckConstraint(
+                "ck_subscription_plans_published_at",
+                "(status = 'published') = (published_at IS NOT NULL)");
+        });
+
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Code).HasMaxLength(64).IsRequired();
+        b.Property(x => x.Version).HasMaxLength(16).IsRequired();
+        b.Property(x => x.Locale).HasMaxLength(16).IsRequired().HasDefaultValue("ru");
+        b.Property(x => x.Title).HasMaxLength(255).IsRequired();
+        b.Property(x => x.Summary).HasColumnType("text").IsRequired();
+        b.Property(x => x.ServicePackageCode).HasMaxLength(64).IsRequired();
+        b.Property(x => x.PriceRub).HasColumnType("numeric(12,2)").IsRequired();
+        b.Property(x => x.Status).HasColumnType("text").IsRequired().HasDefaultValue(ServicePackageStatuses.Draft);
+        b.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+        b.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
+
+        // Computed from the stored fields; a persisted copy is one more value that can drift.
+        b.Ignore(x => x.PricePerVisit);
+
+        b.HasIndex(x => new { x.Code, x.Version, x.Locale })
+            .IsUnique()
+            .HasDatabaseName("ux_subscription_plans_code_version_locale");
+
+        b.HasIndex(x => x.Status);
+    }
+}
