@@ -3,11 +3,14 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { MembersPanel } from "@/components/cabinet/MembersPanel";
+import { OrderCareForm } from "@/components/cabinet/OrderCareForm";
 import { PhotoGallery } from "@/components/cabinet/PhotoGallery";
 import { LocationQualityBadge, LocationQualityHint } from "@/components/cabinet/LocationQualityNote";
 import { ApiError } from "@/lib/api/client";
 import { canManage, getBurialSite, listMembers } from "@/lib/api/burialSites";
 import { MEDIA_OWNER, listMedia } from "@/lib/api/media";
+import { listServicePackages } from "@/lib/api/catalog";
+import { canOrder } from "@/lib/api/burialSites";
 import { getSessionCookieHeader } from "@/lib/auth/serverCookie";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +49,7 @@ export default async function BurialSitePage({ params }: { params: { id: string 
   // Photos degrade to an empty gallery rather than failing the page: a storage hiccup should
   // not hide the record itself, which is the part the client came for.
   const photos = await listMedia(MEDIA_OWNER.burialSite, id, cookieHeader).catch(() => []);
+  const packages = await listServicePackages(cookieHeader).catch(() => []);
   const manages = canManage(site.permission);
 
   return (
@@ -85,6 +89,13 @@ export default async function BurialSitePage({ params }: { params: { id: string 
       </Card>
 
       <PhotoGallery siteId={site.id} initialPhotos={photos} canManage={manages} />
+
+      <OrderCareForm
+        siteId={site.id}
+        packages={packages}
+        locationQuality={site.locationQuality}
+        canOrder={canOrder(site.permission)}
+      />
 
       <MembersPanel
         siteId={site.id}

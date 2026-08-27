@@ -23,6 +23,24 @@ export function CabinetHeader() {
           Память рядом
         </Link>
 
+        <nav aria-label="Разделы кабинета" className="hidden sm:block">
+          <ul className="flex list-none gap-1 p-0">
+            {[
+              { href: "/cabinet", label: "Места памяти" },
+              { href: "/cabinet/orders", label: "Заказы" },
+            ].map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="inline-flex min-h-hit items-center rounded-pill px-4 text-sm text-ink-2 no-underline transition-colors duration-ds ease-ds hover:bg-accent-soft hover:text-accent-deep"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <div className="flex items-center gap-3">
           {user?.email ? (
             <span className="hidden text-sm text-ink-2 sm:inline" title={user.email}>

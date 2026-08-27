@@ -68,9 +68,9 @@ function SiteCard({ site }: { site: BurialSite }) {
         <ButtonLink href={`/cabinet/${site.id}`} variant="secondary" size="sm">
           Открыть
         </ButtonLink>
-        {/* Not a link yet: the order flow (V3) does not exist, and a button that
-            goes nowhere is worse than one that says why it is waiting. */}
-        <span className="text-xs text-ink-2">Заказ ухода — в следующем обновлении</span>
+        <ButtonLink href={`/cabinet/${site.id}`} variant="ghost" size="sm">
+          Заказать уход
+        </ButtonLink>
       </div>
     </Card>
   );
