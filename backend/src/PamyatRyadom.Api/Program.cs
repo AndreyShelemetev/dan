@@ -11,6 +11,7 @@ using PamyatRyadom.Api.Services.Catalog;
 using PamyatRyadom.Api.Services.Dev;
 using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
+using PamyatRyadom.Api.Services.Orders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,6 +112,10 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 // every start without rewriting terms an order was already sold under.
 builder.Services.AddScoped<ICatalogSeeder, CatalogSeeder>();
 builder.Services.AddScoped<ICatalogAdminService, CatalogAdminService>();
+
+// Orders: the spine. Status changes go through OrderStateMachine, never straight to the column.
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IEstimateService, EstimateService>();
 
 if (builder.Environment.IsDevelopment())
 {

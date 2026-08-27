@@ -4,6 +4,7 @@ using PamyatRyadom.Api.Models.Auth;
 using PamyatRyadom.Api.Models.BurialSites;
 using PamyatRyadom.Api.Models.Catalog;
 using PamyatRyadom.Api.Models.Media;
+using PamyatRyadom.Api.Models.Orders;
 
 namespace PamyatRyadom.Api.Data;
 
@@ -45,6 +46,12 @@ public sealed class AppDbContext : DbContext
     public DbSet<ServicePackage> ServicePackages => Set<ServicePackage>();
     public DbSet<ChecklistTemplate> ChecklistTemplates => Set<ChecklistTemplate>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+
+    // Orders: the spine. Status changes go through OrderStateMachine, never straight to the column.
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
+    public DbSet<Estimate> Estimates => Set<Estimate>();
+    public DbSet<EstimateLine> EstimateLines => Set<EstimateLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
