@@ -1165,6 +1165,174 @@ namespace PamyatRyadom.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Dispatch.Visit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("text")
+                        .HasColumnName("decline_reason");
+
+                    b.Property<string>("ExecutorNote")
+                        .HasColumnType("text")
+                        .HasColumnName("executor_note");
+
+                    b.Property<long?>("ExecutorUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("executor_user_id");
+
+                    b.Property<DateTimeOffset?>("OfferExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("offer_expires_at");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<decimal?>("PayoutRub")
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("payout_rub");
+
+                    b.Property<string>("ReviewNote")
+                        .HasColumnType("text")
+                        .HasColumnName("review_note");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<long?>("ReviewedByUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<DateTimeOffset?>("ScheduledFor")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_for");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("offered")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_visits");
+
+                    b.HasIndex("ExecutorUserId", "Status")
+                        .HasDatabaseName("ix_visits_executor_user_id_status");
+
+                    b.HasIndex("OrderId", "Status")
+                        .HasDatabaseName("ix_visits_order_id_status");
+
+                    b.ToTable("visits", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_visits_payout", "payout_rub IS NULL OR payout_rub >= 0");
+
+                            t.HasCheckConstraint("ck_visits_status", "status IN ('offered', 'accepted', 'declined', 'in_progress', 'submitted', 'rework', 'approved', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Dispatch.VisitChecklistItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<bool>("Optional")
+                        .HasColumnType("boolean")
+                        .HasColumnName("optional");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("pending")
+                        .HasColumnName("result");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<long>("VisitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_visit_checklist_items");
+
+                    b.HasIndex("VisitId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ux_visit_checklist_items_key");
+
+                    b.ToTable("visit_checklist_items", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_visit_checklist_items_note", "result NOT IN ('impossible', 'not_required') OR (note IS NOT NULL AND length(btrim(note)) > 0)");
+
+                            t.HasCheckConstraint("ck_visit_checklist_items_result", "result IN ('pending', 'done', 'impossible', 'not_required')");
+                        });
+                });
+
             modelBuilder.Entity("PamyatRyadom.Api.Models.Media.MediaAsset", b =>
                 {
                     b.Property<long>("Id")
@@ -1637,6 +1805,120 @@ namespace PamyatRyadom.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Payments.Payment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("AmountRub")
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount_rub");
+
+                    b.Property<string>("ConfirmationUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("confirmation_url");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("EstimateVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimate_version");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<string>("IdempotenceKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("idempotence_key");
+
+                    b.Property<DateTimeOffset?>("LastCheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_checked_at");
+
+                    b.Property<long>("OrderId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("OrderRef")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("order_ref");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("ProviderPaymentId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("provider_payment_id");
+
+                    b.Property<DateTimeOffset?>("RefundedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refunded_at");
+
+                    b.Property<decimal>("RefundedRub")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(12,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("refunded_rub");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("pending")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payments");
+
+                    b.HasIndex("OrderRef")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payments_order_ref");
+
+                    b.HasIndex("ProviderPaymentId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payments_provider_payment_id")
+                        .HasFilter("provider_payment_id IS NOT NULL");
+
+                    b.HasIndex("OrderId", "Status")
+                        .HasDatabaseName("ix_payments_order_id_status");
+
+                    b.ToTable("payments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_payments_amount", "amount_rub > 0");
+
+                            t.HasCheckConstraint("ck_payments_refunded", "refunded_rub >= 0 AND refunded_rub <= amount_rub");
+
+                            t.HasCheckConstraint("ck_payments_status", "status IN ('pending', 'waiting_for_capture', 'succeeded', 'canceled', 'failed', 'refunded')");
+                        });
+                });
+
             modelBuilder.Entity("PamyatRyadom.Api.Models.Auth.AuthIdentity", b =>
                 {
                     b.HasOne("PamyatRyadom.Api.Models.Auth.User", "User")
@@ -1771,6 +2053,36 @@ namespace PamyatRyadom.Api.Data.Migrations
                     b.Navigation("ServicePackage");
                 });
 
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Dispatch.Visit", b =>
+                {
+                    b.HasOne("PamyatRyadom.Api.Models.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("ExecutorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_visits_users_executor_user_id");
+
+                    b.HasOne("PamyatRyadom.Api.Models.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_visits_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Dispatch.VisitChecklistItem", b =>
+                {
+                    b.HasOne("PamyatRyadom.Api.Models.Dispatch.Visit", "Visit")
+                        .WithMany("ChecklistItems")
+                        .HasForeignKey("VisitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_visit_checklist_items_visits_visit_id");
+
+                    b.Navigation("Visit");
+                });
+
             modelBuilder.Entity("PamyatRyadom.Api.Models.Media.MediaAsset", b =>
                 {
                     b.HasOne("PamyatRyadom.Api.Models.Auth.User", null)
@@ -1842,6 +2154,18 @@ namespace PamyatRyadom.Api.Data.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Payments.Payment", b =>
+                {
+                    b.HasOne("PamyatRyadom.Api.Models.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_orders_order_id");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("PamyatRyadom.Api.Models.Auth.LegalDocument", b =>
                 {
                     b.Navigation("Acceptances");
@@ -1869,6 +2193,11 @@ namespace PamyatRyadom.Api.Data.Migrations
             modelBuilder.Entity("PamyatRyadom.Api.Models.Catalog.ServicePackage", b =>
                 {
                     b.Navigation("ChecklistTemplate");
+                });
+
+            modelBuilder.Entity("PamyatRyadom.Api.Models.Dispatch.Visit", b =>
+                {
+                    b.Navigation("ChecklistItems");
                 });
 
             modelBuilder.Entity("PamyatRyadom.Api.Models.Orders.Estimate", b =>

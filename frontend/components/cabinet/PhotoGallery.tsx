@@ -22,12 +22,25 @@ import {
  */
 export function PhotoGallery({
   siteId,
+  ownerType = MEDIA_OWNER.burialSite,
+  phase = "reference",
   initialPhotos,
   canManage,
+  title = "Фотографии",
+  hint = "Снимки видны только вам и тем, кого вы пригласили. Ссылки на них временные, а публичного адреса у файлов нет.",
+  emptyHint,
 }: {
+  /** Id of the owning record — a burial site or an order, per `ownerType`. */
   siteId: number;
+  ownerType?: string;
+  /** Which set these belong to — "reference", "before", "after". A visit report needs its two
+   *  sets kept apart, so the phase is part of the upload rather than a property of the file. */
+  phase?: string;
   initialPhotos: MediaAsset[];
   canManage: boolean;
+  title?: string;
+  hint?: string;
+  emptyHint?: string;
 }) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [pending, setPending] = useState(0);
@@ -53,7 +66,7 @@ export function PhotoGallery({
     // starves each of them, and one visible failure is easier to explain than six partial ones.
     for (const file of files) {
       try {
-        const asset = await uploadPhoto(MEDIA_OWNER.burialSite, siteId, file);
+        const asset = await uploadPhoto(ownerType, siteId, file, phase);
         setPhotos((current) => [...current, asset]);
       } catch (err) {
         setError(
@@ -81,14 +94,17 @@ export function PhotoGallery({
     }
   }
 
+  // A labelled region: the gallery is a distinct area of a long page, and naming it lets a
+  // screen-reader user jump straight to the photos instead of walking the whole order.
+  const headingId = `photo-gallery-${ownerType}-${siteId}-${phase}`;
+
   return (
-    <Card className="flex flex-col gap-5">
+    <Card as="section" aria-labelledby={headingId} className="flex flex-col gap-5">
       <div>
-        <h2 className="font-display text-xl font-normal text-ink-1">Фотографии</h2>
-        <p className="mt-2 text-sm text-ink-2">
-          Снимки видны только вам и тем, кого вы пригласили. Ссылки на них временные, а публичного
-          адреса у файлов нет.
-        </p>
+        <h2 id={headingId} className="font-display text-xl font-normal text-ink-1">
+          {title}
+        </h2>
+        <p className="mt-2 text-sm text-ink-2">{hint}</p>
       </div>
 
       {photos.length > 0 ? (
@@ -127,7 +143,8 @@ export function PhotoGallery({
       ) : pending === 0 ? (
         <p className="text-sm text-ink-2">
           {canManage
-            ? "Пока фотографий нет. Добавьте снимки места — они помогут исполнителю найти его и убедиться, что он на месте."
+            ? (emptyHint ??
+              "Пока фотографий нет. Добавьте снимки места — они помогут исполнителю найти его и убедиться, что он на месте.")
             : "Пока фотографий нет."}
         </p>
       ) : null}
@@ -158,10 +175,10 @@ export function PhotoGallery({
             onChange={handleFiles}
             disabled={pending > 0}
             className="peer sr-only"
-            id="photo-input"
+            id={`photo-input-${headingId}`}
           />
           <label
-            htmlFor="photo-input"
+            htmlFor={`photo-input-${headingId}`}
             className={buttonClasses({
               variant: "secondary",
               size: "sm",

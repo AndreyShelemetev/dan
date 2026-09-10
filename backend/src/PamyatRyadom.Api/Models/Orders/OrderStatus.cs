@@ -55,6 +55,31 @@ public static class OrderStatuses
 
     /// <summary>Terminal states: nothing moves out of them.</summary>
     public static readonly IReadOnlyCollection<string> Terminal = new[] { Completed, Cancelled, Refunded };
+
+    /// <summary>Orders where the next move is ours. This is the actual work queue.</summary>
+    public static readonly IReadOnlyCollection<string> NeedsStaffAction = new[]
+    {
+        Submitted, LocationReview, Paid, Assigning, QaReview, Disputed,
+    };
+
+    /// <summary>The ball is with the client. Nothing to do but watch how long it has been
+    /// sitting — kept visible so a stalled order is chased rather than forgotten.</summary>
+    public static readonly IReadOnlyCollection<string> WaitingOnCustomer = new[]
+    {
+        EstimateReady, AwaitingPayment, ExtraApproval, CustomerReview,
+    };
+
+    /// <summary>Assigned and running. An executor owns it; a dispatcher only intervenes if it
+    /// stops moving.</summary>
+    public static readonly IReadOnlyCollection<string> InFlight = new[] { Assigned, InProgress };
+
+    /// <summary>Which pile an order belongs in. One authority, so the queue UI never has to
+    /// re-derive it from a status string and drift out of step.</summary>
+    public static string QueueGroup(string status) =>
+        NeedsStaffAction.Contains(status) ? "staff"
+        : WaitingOnCustomer.Contains(status) ? "customer"
+        : InFlight.Contains(status) ? "in_flight"
+        : "done";
 }
 
 /// <summary>

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { Button } from "@/components/ui/Button";
+import { AccountMenu } from "@/components/site/AccountMenu";
 import { cn } from "@/lib/ui/cn";
 
 const TABS = [
-  { href: "/admin/catalog", label: "Пакеты услуг" },
-  { href: "/admin/plans", label: "Подписки" },
+  { href: "/admin/queue", label: "Очередь заказов", adminOnly: false },
+  { href: "/admin/qa", label: "Проверка отчётов", adminOnly: false },
+  { href: "/admin/catalog", label: "Пакеты услуг", adminOnly: true },
+  { href: "/admin/plans", label: "Подписки", adminOnly: true },
 ] as const;
 
 /**
@@ -16,9 +17,8 @@ const TABS = [
  * calm-and-spacious treatment that suits a grieving relative gets in the way of someone editing
  * a price list.
  */
-export function AdminNav() {
+export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
 
   return (
     <header className="border-b border-border bg-surface">
@@ -36,19 +36,12 @@ export function AdminNav() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {user?.email ? (
-              <span className="hidden text-sm text-ink-2 sm:inline">{user.email}</span>
-            ) : null}
-            <Button variant="ghost" size="sm" onClick={() => void logout()}>
-              Выйти
-            </Button>
-          </div>
+          <AccountMenu />
         </div>
 
         <nav aria-label="Разделы админки">
           <ul className="flex list-none flex-wrap gap-1 p-0">
-            {TABS.map((tab) => {
+            {TABS.filter((tab) => isAdmin || !tab.adminOnly).map((tab) => {
               const active = pathname.startsWith(tab.href);
               return (
                 <li key={tab.href}>

@@ -20,8 +20,13 @@ namespace PamyatRyadom.Api.Controllers;
 public sealed class AdminOrdersController : AuthorizedControllerBase
 {
     private readonly IEstimateService _estimates;
+    private readonly Services.Dispatch.IVisitService _visits;
 
-    public AdminOrdersController(IEstimateService estimates) => _estimates = estimates;
+    public AdminOrdersController(IEstimateService estimates, Services.Dispatch.IVisitService visits)
+    {
+        _estimates = estimates;
+        _visits = visits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<OrderSummaryDto>>>> Queue(
@@ -31,6 +36,12 @@ public sealed class AdminOrdersController : AuthorizedControllerBase
     [HttpGet("{id:long}")]
     public async Task<ActionResult<ApiResponse<OrderDto>>> Get(long id, CancellationToken ct) =>
         Envelope(await _estimates.GetAsync(id, ct));
+
+    /// <summary>Visits on this order, so the staff card can show who is going and when.</summary>
+    [HttpGet("{id:long}/visits")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<Dtos.Dispatch.VisitDto>>>> Visits(
+        long id, CancellationToken ct) =>
+        Envelope(await _visits.ListForOrderAsync(id, ct));
 
     [HttpPost("{id:long}/estimates")]
     public async Task<ActionResult<ApiResponse<EstimateDto>>> CreateDraft(

@@ -5,9 +5,15 @@ import { SectionEyebrow } from "@/components/ui/SectionEyebrow";
 import { EstimateCard } from "@/components/cabinet/EstimateCard";
 import { OrderTimeline } from "@/components/cabinet/OrderTimeline";
 import { OrderActions } from "@/components/cabinet/OrderActions";
+import { PhotoGallery } from "@/components/cabinet/PhotoGallery";
+import { PaymentPanel } from "@/components/cabinet/PaymentPanel";
+import { ReportPanel } from "@/components/cabinet/ReportPanel";
 import { ApiError } from "@/lib/api/client";
 import { formatRub } from "@/lib/api/catalog";
 import { orders } from "@/lib/api/orders";
+import { MEDIA_OWNER, listMedia } from "@/lib/api/media";
+import { payments } from "@/lib/api/payments";
+import { getReport } from "@/lib/api/visits";
 import { getSessionCookieHeader } from "@/lib/auth/serverCookie";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +31,27 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
     if (err instanceof ApiError && (err.status === 404 || err.isUnauthorized)) notFound();
     throw err;
   }
+
+  const photos = await listMedia(MEDIA_OWNER.order, id, getSessionCookieHeader()).catch(() => []);
+
+  // Photos can be attached while the client still shapes the request. Once it has been priced
+  // they become part of what the estimate was based on, so swapping them would quietly change
+  // the evidence behind an agreed figure — the server enforces the same rule.
+  const photosEditable = ["draft", "submitted", "location_review"].includes(order.status);
+
+  // Both are absent for most of an order's life — a request not yet priced has nothing to pay
+  // for, and a report exists only once QA has passed it. Missing is the normal case, not a
+  // failure, so neither is allowed to take the page down with it.
+  const accepted = order.estimates.find((e) => e.status === "accepted");
+
+  const payment =
+    order.status === "awaiting_payment"
+      ? await payments.latest(id, getSessionCookieHeader()).catch(() => null)
+      : null;
+
+  const report = ["customer_review", "completed", "disputed"].includes(order.status)
+    ? await getReport(id, getSessionCookieHeader()).catch(() => null)
+    : null;
 
   // Only one version is ever awaiting a decision; the rest are shown for reference.
   const pending = order.estimates.find((e) => e.status === "published");
@@ -50,6 +77,18 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       </div>
 
       {pending ? <EstimateCard orderId={order.id} estimate={pending} decidable /> : null}
+
+      {order.status === "awaiting_payment" && accepted ? (
+        <PaymentPanel orderId={order.id} amountRub={accepted.totalRub} initialPayment={payment} />
+      ) : null}
+
+      {report ? (
+        <ReportPanel
+          orderId={order.id}
+          report={report}
+          decidable={order.status === "customer_review"}
+        />
+      ) : null}
 
       <Card className="flex flex-col gap-5">
         <h2 className="font-display text-xl font-normal text-ink-1">О заказе</h2>
@@ -82,6 +121,16 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
         <OrderActions order={order} />
       </Card>
+
+      <PhotoGallery
+        siteId={order.id}
+        ownerType={MEDIA_OWNER.order}
+        initialPhotos={photos}
+        canManage={photosEditable}
+        title="Фотографии к заявке"
+        hint="Снимки помогают точнее оценить работу и найти место. Видны только вам и сотрудникам сервиса."
+        emptyHint="Пока фотографий нет. Добавьте снимки — что нужно сделать, в каком состоянии участок сейчас. Чем понятнее, тем точнее смета."
+      />
 
       {others.map((estimate) => (
         <EstimateCard

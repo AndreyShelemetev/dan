@@ -4,7 +4,10 @@ using Microsoft.Extensions.Options;
 using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Media;
 using PamyatRyadom.Api.Models.BurialSites;
+using PamyatRyadom.Api.Models.Auth;
+using PamyatRyadom.Api.Models.Dispatch;
 using PamyatRyadom.Api.Models.Media;
+using PamyatRyadom.Api.Models.Orders;
 using PamyatRyadom.Api.Services.BurialSites;
 using PamyatRyadom.Api.Services.Common;
 using SixLabors.ImageSharp;
@@ -337,8 +340,10 @@ public sealed class MediaService : IMediaService
         ownerType switch
         {
             MediaOwnerTypes.BurialSite => HasBurialSiteAccessAsync(userId, ownerId, manageOnly: false, ct),
-            // Orders, visits and disputes get their own rules when those modules land. Denying
-            // by default means a new owner type cannot accidentally inherit open access.
+            MediaOwnerTypes.Order => OwnsOrderAsync(userId, ownerId, forWriting: false, ct),
+            MediaOwnerTypes.Visit => CanSeeVisitAsync(userId, ownerId, forWriting: false, ct),
+            // Disputes get their own rule when that module lands. Denying by default means a new
+            // owner type cannot accidentally inherit open access.
             _ => Task.FromResult(false),
         };
 
@@ -346,8 +351,107 @@ public sealed class MediaService : IMediaService
         ownerType switch
         {
             MediaOwnerTypes.BurialSite => HasBurialSiteAccessAsync(userId, ownerId, manageOnly: true, ct),
+            MediaOwnerTypes.Order => OwnsOrderAsync(userId, ownerId, forWriting: true, ct),
+            MediaOwnerTypes.Visit => CanSeeVisitAsync(userId, ownerId, forWriting: true, ct),
             _ => Task.FromResult(false),
         };
+
+    /// <summary>Staff who need to look at what a client attached in order to do their job:
+    /// price the request, check the work against it, answer a question about it. Finance and
+    /// executors are absent on purpose — neither prices nor reviews a request from these photos,
+    /// and an executor sees the site through their own visit instead.</summary>
+    private static readonly string[] OrderPhotoViewerRoles =
+    {
+        UserRoles.Dispatcher, UserRoles.Qa, UserRoles.Support, UserRoles.Admin, UserRoles.Superadmin
+    };
+
+    /// <summary>
+    /// Photos the client attaches to their own request.
+    ///
+    /// Readable for as long as they own the order; writable only while the order is still theirs
+    /// to shape. Once it has been priced, the photos are part of what the estimate was based on —
+    /// letting the client swap them afterwards would quietly change the evidence behind an
+    /// agreed price.
+    ///
+    /// Operational staff can read but never write: a dispatcher has to see the grave to quote a
+    /// job, but the client's own evidence is not something we edit on their behalf.
+    /// </summary>
+    private async Task<bool> OwnsOrderAsync(long userId, long orderId, bool forWriting, CancellationToken ct)
+    {
+        var order = await _db.Orders
+            .AsNoTracking()
+            .Where(o => o.Id == orderId)
+            .Select(o => new { o.CustomerUserId, o.Status })
+            .FirstOrDefaultAsync(ct);
+
+        if (order is null)
+        {
+            return false;
+        }
+
+        if (order.CustomerUserId != userId)
+        {
+            return !forWriting && await IsOrderPhotoViewerAsync(userId, ct);
+        }
+
+        return !forWriting || OrderStateMachine.IsClientEditable(order.Status);
+    }
+
+    private async Task<bool> IsOrderPhotoViewerAsync(long userId, CancellationToken ct)
+    {
+        var role = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId && u.Status == UserStatuses.Active)
+            .Select(u => u.Role)
+            .FirstOrDefaultAsync(ct);
+
+        return role is not null && OrderPhotoViewerRoles.Contains(role);
+    }
+
+    /// <summary>
+    /// The photographs that make up a visit report.
+    ///
+    /// Written only by the executor doing the job, and only while the visit is still theirs to
+    /// work on — a report editable after it is filed is not evidence of anything.
+    ///
+    /// Read by that executor, by staff who review the work, and by the client who paid for it —
+    /// but the client only once QA has approved it. Showing an unreviewed report early turns a
+    /// problem we would have caught into a dispute the client raises (BR-010).
+    /// </summary>
+    private async Task<bool> CanSeeVisitAsync(long userId, long visitId, bool forWriting, CancellationToken ct)
+    {
+        var visit = await _db.Visits
+            .AsNoTracking()
+            .Where(v => v.Id == visitId)
+            .Select(v => new { v.ExecutorUserId, v.Status, v.OrderId })
+            .FirstOrDefaultAsync(ct);
+
+        if (visit is null)
+        {
+            return false;
+        }
+
+        if (visit.ExecutorUserId == userId)
+        {
+            return !forWriting || VisitStatuses.IsExecutorActionable(visit.Status);
+        }
+
+        if (forWriting)
+        {
+            // Nobody else writes a report. Not QA, not an admin: a report someone other than the
+            // executor can add photographs to is no longer a record of what they found.
+            return false;
+        }
+
+        if (await IsOrderPhotoViewerAsync(userId, ct))
+        {
+            return true;
+        }
+
+        // The client who paid for it, once it has passed QA.
+        return visit.Status == VisitStatuses.Approved &&
+               await _db.Orders.AnyAsync(o => o.Id == visit.OrderId && o.CustomerUserId == userId, ct);
+    }
 
     private async Task<bool> HasBurialSiteAccessAsync(long userId, long siteId, bool manageOnly, CancellationToken ct)
     {

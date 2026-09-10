@@ -55,6 +55,12 @@ public sealed class AdminCatalogController : AuthorizedControllerBase
         long id, [FromBody] NewVersionDto dto, CancellationToken ct) =>
         Envelope(await _catalog.NewPackageVersionAsync(CurrentUserId, id, dto.Version, ct));
 
+    /// <summary>Deletes a draft version. Published versions are archived, never deleted — an
+    /// order that points at one has to keep pointing at something.</summary>
+    [HttpDelete("packages/{id:long}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeletePackage(long id, CancellationToken ct) =>
+        Envelope(await _catalog.DeletePackageAsync(CurrentUserId, id, ct));
+
     // -- Subscription plans -----------------------------------------------------------------------
 
     [HttpGet("plans")]
@@ -78,6 +84,10 @@ public sealed class AdminCatalogController : AuthorizedControllerBase
     [HttpPost("plans/{id:long}/archive")]
     public async Task<ActionResult<ApiResponse<AdminPlanDto>>> ArchivePlan(long id, CancellationToken ct) =>
         Envelope(await _catalog.ArchivePlanAsync(CurrentUserId, id, ct));
+
+    [HttpDelete("plans/{id:long}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeletePlan(long id, CancellationToken ct) =>
+        Envelope(await _catalog.DeletePlanAsync(CurrentUserId, id, ct));
 
     private ActionResult<ApiResponse<T>> Envelope<T>(ServiceResult<T> result) =>
         result.Succeeded && result.Data is not null

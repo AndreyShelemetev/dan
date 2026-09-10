@@ -46,13 +46,13 @@ public sealed class EstimateService : IEstimateService
         }
         else
         {
-            // The default queue is what actually needs a person: anything terminal or already
-            // waiting on the client is noise for a dispatcher working through the list.
-            var active = new[]
-            {
-                OrderStatuses.Submitted, OrderStatuses.LocationReview, OrderStatuses.AwaitingPayment,
-                OrderStatuses.Paid, OrderStatuses.Assigning,
-            };
+            // Everything still alive, in one call. Splitting it into "ours" and "theirs" is the
+            // caller's job (OrderStatuses.QueueGroup): an order waiting on a client is not work,
+            // but it is exactly the thing that quietly rots if nobody ever sees it.
+            var active = OrderStatuses.NeedsStaffAction
+                .Concat(OrderStatuses.WaitingOnCustomer)
+                .Concat(OrderStatuses.InFlight)
+                .ToArray();
             query = query.Where(o => active.Contains(o.Status));
         }
 
@@ -61,6 +61,7 @@ public sealed class EstimateService : IEstimateService
         return ServiceResult<IReadOnlyList<OrderSummaryDto>>.Ok(orders
             .Select(o => new OrderSummaryDto
             {
+                QueueGroup = OrderStatuses.QueueGroup(o.Status),
                 Id = o.Id,
                 Number = o.Number,
                 Status = o.Status,

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { logout as apiLogout, type AuthUser } from "@/lib/api/auth";
 
 interface AuthContextValue {
@@ -39,17 +40,27 @@ export function AuthProvider({
   initialUser: AuthUser | null;
   children: ReactNode;
 }) {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(initialUser);
 
   const logout = useCallback(async () => {
     try {
       await apiLogout();
     } finally {
-      // Clear local state even if the request failed — the user asked to
-      // log out and expects the UI to reflect that either way.
+      // Clear local state even if the request failed — the user asked to log out and expects
+      // the UI to reflect that either way.
       setUser(null);
+
+      // Then leave. Clearing the context alone would leave someone standing on a page they can
+      // no longer load — a signed-out visitor on /cabinet sees a shell whose next server render
+      // will bounce them anyway. Going home makes that immediate and obvious.
+      router.push("/");
+
+      // refresh() so every Server Component re-renders anonymously; without it the header could
+      // keep showing a cached signed-in state.
+      router.refresh();
     }
-  }, []);
+  }, [router]);
 
   return (
     <AuthContext.Provider

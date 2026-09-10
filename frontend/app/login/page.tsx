@@ -148,9 +148,22 @@ export default function LoginPage() {
 
             {error && <FormError message={error} />}
 
-            <Button type="submit" disabled={isSubmitting}>
+            {/* Disabled until consent is given. A disabled control that does not say why is a
+                dead end, so the reason is described rather than left to be guessed — and the
+                server refuses registration without consent regardless (legal_not_accepted). */}
+            <Button
+              type="submit"
+              disabled={isSubmitting || !acceptedLegal}
+              aria-describedby={!acceptedLegal ? "consent-required" : undefined}
+            >
               {isSubmitting ? "Отправляем…" : "Получить код"}
             </Button>
+
+            {!acceptedLegal && (
+              <p id="consent-required" className="text-center text-sm text-ink-2">
+                Чтобы продолжить, отметьте согласие выше.
+              </p>
+            )}
           </form>
         ) : (
           <form onSubmit={handleVerifyCode} className="mt-8 flex flex-col gap-5">

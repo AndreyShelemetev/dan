@@ -7,6 +7,10 @@ export const metadata = { title: "Админка · Память рядом" };
 
 const ADMIN_ROLES = ["admin", "superadmin"];
 
+/** Everyone who works the operational side. The queue is a dispatcher's day job; the catalogue
+ *  is not, and each page narrows further from here. */
+const STAFF_ROLES = ["dispatcher", "qa", "support", "finance", ...ADMIN_ROLES];
+
 /**
  * Role gate for the admin area.
  *
@@ -19,16 +23,18 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const user = await getServerUser();
 
   if (!user) {
-    redirect("/login?redirect=/admin/catalog");
+    // The queue, not the catalogue: it is the one admin page every staff role can open, so
+    // signing in from here lands on a page rather than on a 404.
+    redirect("/login?redirect=/admin/queue");
   }
 
-  if (!ADMIN_ROLES.includes(user.role)) {
+  if (!STAFF_ROLES.includes(user.role)) {
     notFound();
   }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AdminNav />
+      <AdminNav isAdmin={ADMIN_ROLES.includes(user.role)} />
       <main id="main" className="mx-auto w-full max-w-content flex-1 px-6 py-8 lg:px-14">
         {children}
       </main>

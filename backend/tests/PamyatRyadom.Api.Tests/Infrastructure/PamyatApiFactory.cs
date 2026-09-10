@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Services.Auth;
+using PamyatRyadom.Api.Services.Media;
 
 namespace PamyatRyadom.Api.Tests.Infrastructure;
 
@@ -72,6 +73,10 @@ public sealed class PamyatApiFactory : WebApplicationFactory<Program>
     /// database stores nothing but its PBKDF2 hash.</summary>
     public CapturingEmailSender Emails { get; }
 
+    /// <summary>The object store this host writes media to. Exposed so a test can assert what
+    /// actually landed in the bucket — including that a rejected upload left nothing behind.</summary>
+    public InMemoryObjectStorage Storage { get; } = new();
+
     /// <summary>Where this host persists its Data Protection key ring. Pass the same path to a second
     /// factory to model a redeploy that must keep stored MFA secrets readable.</summary>
     public string DataProtectionKeyRingPath { get; }
@@ -87,6 +92,12 @@ public sealed class PamyatApiFactory : WebApplicationFactory<Program>
             // this every OTP test would try to open a real SMTP connection.
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(Emails);
+
+            // No bucket, no credentials, no network. Constructing the real S3 client throws
+            // without a ServiceURL, which would fail every media test for a reason that has
+            // nothing to do with what it is testing.
+            services.RemoveAll<IObjectStorage>();
+            services.AddSingleton<IObjectStorage>(Storage);
 
             services.AddControllers().AddApplicationPart(typeof(PamyatApiFactory).Assembly);
         });

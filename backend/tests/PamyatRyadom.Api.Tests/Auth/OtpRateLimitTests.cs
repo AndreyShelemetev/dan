@@ -14,6 +14,35 @@ namespace PamyatRyadom.Api.Tests.Auth;
 [Collection(PostgresCollection.Name)]
 public sealed class OtpRateLimitTests : AuthIntegrationTest
 {
+
+    [Fact]
+    public void The_production_throttle_cannot_be_loosened_by_configuration()
+    {
+        // The looser limit is a property of the environment, not a setting. If this ever becomes
+        // an appsettings key, a production deployment is one typo away from an open OTP endpoint.
+        var policies = typeof(PamyatRyadom.Api.Models.Auth.UserRoles).Assembly
+            .GetType("PamyatRyadom.Api.Services.Auth.AuthRateLimitPolicies", throwOnError: true)!;
+
+        var limitFor = policies.GetMethod("PermitLimitFor")!;
+
+        var production = (int)limitFor.Invoke(null, [new StubEnvironment("Production")])!;
+        var staging = (int)limitFor.Invoke(null, [new StubEnvironment("Staging")])!;
+        var development = (int)limitFor.Invoke(null, [new StubEnvironment("Development")])!;
+
+        Assert.Equal(PermitLimit, production);
+        Assert.Equal(PermitLimit, staging);
+        Assert.True(development > PermitLimit);
+    }
+
+    private sealed class StubEnvironment(string name) : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = name;
+        public string ApplicationName { get; set; } = "PamyatRyadom.Api";
+        public string ContentRootPath { get; set; } = "/";
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            new Microsoft.Extensions.FileProviders.NullFileProvider();
+    }
+
     /// <summary>Mirrors AuthRateLimitPolicies.RequestOtpPermitLimit (internal to the API assembly).</summary>
     private const int PermitLimit = 5;
 

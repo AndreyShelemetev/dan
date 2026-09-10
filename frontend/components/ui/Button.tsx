@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/ui/cn";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -57,6 +57,11 @@ export interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     ButtonStyleOptions {}
 
-export function Button({ variant, size, className, type = "button", ...rest }: ButtonProps) {
-  return <button type={type} className={buttonClasses({ variant, size, className })} {...rest} />;
-}
+/** Forwards a ref so callers that own focus — a menu returning focus to its trigger on Escape,
+ *  a form focusing the first invalid control — can reach the real element. */
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant, size, className, type = "button", ...rest },
+  ref,
+) {
+  return <button ref={ref} type={type} className={buttonClasses({ variant, size, className })} {...rest} />;
+});

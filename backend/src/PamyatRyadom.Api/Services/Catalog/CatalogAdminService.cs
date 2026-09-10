@@ -17,11 +17,16 @@ public interface ICatalogAdminService
     Task<ServiceResult<AdminPackageDto>> ArchivePackageAsync(long actorId, long id, CancellationToken ct = default);
     Task<ServiceResult<AdminPackageDto>> NewPackageVersionAsync(long actorId, long id, string version, CancellationToken ct = default);
 
+    /// <summary>Permanently removes a version. Only ever a draft nothing was sold under — see
+    /// the implementation for why a published version is archived instead.</summary>
+    Task<ServiceResult<object>> DeletePackageAsync(long actorId, long id, CancellationToken ct = default);
+
     Task<ServiceResult<IReadOnlyList<AdminPlanDto>>> ListPlansAsync(CancellationToken ct = default);
     Task<ServiceResult<AdminPlanDto>> CreatePlanAsync(long actorId, SavePlanDto dto, CancellationToken ct = default);
     Task<ServiceResult<AdminPlanDto>> UpdatePlanAsync(long actorId, long id, SavePlanDto dto, CancellationToken ct = default);
     Task<ServiceResult<AdminPlanDto>> PublishPlanAsync(long actorId, long id, CancellationToken ct = default);
     Task<ServiceResult<AdminPlanDto>> ArchivePlanAsync(long actorId, long id, CancellationToken ct = default);
+    Task<ServiceResult<object>> DeletePlanAsync(long actorId, long id, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -260,6 +265,53 @@ public sealed class CatalogAdminService : ICatalogAdminService
         return ServiceResult<AdminPackageDto>.Created(MapPackage(copy));
     }
 
+    /// <summary>
+    /// Deletes a catalogue version outright.
+    ///
+    /// Allowed only for a draft with no orders against it. A published version is evidence of
+    /// what was sold: deleting one would orphan every order that points at it and destroy the
+    /// answer to "what did I actually buy" — which is the question a dispute turns on. For those,
+    /// archiving is the operation, and it already exists.
+    /// </summary>
+    public async Task<ServiceResult<object>> DeletePackageAsync(
+        long actorId, long id, CancellationToken ct = default)
+    {
+        var package = await _db.ServicePackages
+            .Include(p => p.ChecklistTemplate)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
+
+        if (package is null)
+        {
+            return ServiceResult<object>.NotFound("Пакет не найден.");
+        }
+
+        if (package.Status != ServicePackageStatuses.Draft)
+        {
+            return ServiceResult<object>.Validation(
+                "Удалить можно только черновик. Опубликованную версию отправьте в архив — " +
+                "заказы, проданные по ней, должны сохранить свои условия.");
+        }
+
+        // Belt and braces: a draft should have no orders, but the check costs nothing and the
+        // failure it prevents is unrecoverable.
+        if (await _db.Orders.AnyAsync(o => o.ServicePackageId == id, ct))
+        {
+            return ServiceResult<object>.Validation(
+                "По этой версии уже есть заказы — её нельзя удалить, только архивировать.");
+        }
+
+        if (package.ChecklistTemplate is not null)
+        {
+            _db.ChecklistTemplates.Remove(package.ChecklistTemplate);
+        }
+
+        _db.ServicePackages.Remove(package);
+        Audit(actorId, "package_deleted", package.Code, package.Version);
+        await _db.SaveChangesAsync(ct);
+
+        return ServiceResult<object>.Ok(new { deleted = true });
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Subscription plans
     // ---------------------------------------------------------------------------------------------
@@ -384,6 +436,28 @@ public sealed class CatalogAdminService : ICatalogAdminService
         Audit(actorId, "plan_archived", plan.Code, plan.Version);
 
         return ServiceResult<AdminPlanDto>.Ok(MapPlan(plan));
+    }
+
+    public async Task<ServiceResult<object>> DeletePlanAsync(
+        long actorId, long id, CancellationToken ct = default)
+    {
+        var plan = await _db.SubscriptionPlans.FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (plan is null)
+        {
+            return ServiceResult<object>.NotFound("План не найден.");
+        }
+
+        if (plan.Status != ServicePackageStatuses.Draft)
+        {
+            return ServiceResult<object>.Validation(
+                "Удалить можно только черновик. Опубликованный план отправьте в архив.");
+        }
+
+        _db.SubscriptionPlans.Remove(plan);
+        Audit(actorId, "plan_deleted", plan.Code, plan.Version);
+        await _db.SaveChangesAsync(ct);
+
+        return ServiceResult<object>.Ok(new { deleted = true });
     }
 
     // ---------------------------------------------------------------------------------------------

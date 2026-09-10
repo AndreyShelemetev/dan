@@ -127,14 +127,31 @@ export function CatalogManager({ packages }: { packages: AdminPackage[] }) {
                           </Button>
 
                           {pkg.status === "draft" ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={busyId === pkg.id}
-                              onClick={() => void run(pkg.id, () => adminCatalog.publishPackage(pkg.id))}
-                            >
-                              Опубликовать
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busyId === pkg.id}
+                                onClick={() => void run(pkg.id, () => adminCatalog.publishPackage(pkg.id))}
+                              >
+                                Опубликовать
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busyId === pkg.id}
+                                onClick={() => {
+                                  // Confirmed because it is irreversible. Only drafts reach this
+                                  // button, so nothing sold can be lost — but a draft someone
+                                  // spent an hour writing still can.
+                                  if (!window.confirm(`Удалить черновик «${pkg.title}» версии ${pkg.version}? Это необратимо.`)) return;
+                                  void run(pkg.id, () => adminCatalog.deletePackage(pkg.id));
+                                }}
+                                className="text-danger hover:bg-danger-soft hover:text-danger"
+                              >
+                                Удалить
+                              </Button>
+                            </>
                           ) : null}
 
                           {pkg.status === "published" ? (

@@ -100,7 +100,7 @@ public sealed class RegistrationConsentTests : AuthIntegrationTest
         Assert.All(documents, d =>
         {
             Assert.Equal(LegalDocumentStatuses.Published, d.Status);
-            Assert.NotNull(d.EffectiveAt);
+            Assert.NotEqual(default, d.EffectiveAt);
             Assert.False(string.IsNullOrWhiteSpace(d.ContentHash));
         });
     }

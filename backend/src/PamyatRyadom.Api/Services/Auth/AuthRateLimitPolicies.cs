@@ -20,7 +20,17 @@ internal static class AuthRateLimitPolicies
 
     public const int RequestOtpPermitLimit = 5;
 
+    /// <summary>What Development allows instead. A developer signing in and out, and an e2e run
+    /// that logs in a handful of accounts several times over, both blow through five in ten
+    /// minutes — and a throttle that fires during ordinary local work teaches people to work
+    /// around it. Deliberately not a configuration key: like the choice of email sender, the
+    /// environment decides, so no appsettings value can loosen the real limit.</summary>
+    public const int RequestOtpPermitLimitDevelopment = 100;
+
     public static readonly TimeSpan RequestOtpWindow = TimeSpan.FromMinutes(10);
+
+    public static int PermitLimitFor(IHostEnvironment environment) =>
+        environment.IsDevelopment() ? RequestOtpPermitLimitDevelopment : RequestOtpPermitLimit;
 
     private const string DestinationItemKey = "PamyatRyadom.Auth.RateLimit.Destination";
 

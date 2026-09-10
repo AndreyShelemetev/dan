@@ -64,7 +64,10 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
   (`frontend/lib/api/client.ts` unwraps `data` and throws `ApiError` from `errors[0]`).
 - Modules: Identity, BurialSites, Catalog, Orders/Estimates, Dispatch/Visits, Media, Payments,
   Reports/Disputes, Subscriptions, Audit.
-- Implemented so far: **Identity** (see below). Every other module is still unstarted.
+- Implemented so far: **Identity**, **BurialSites**, **Catalog**, **Orders/Estimates**, **Media**,
+  **Payments** (stub provider), **Dispatch/Visits** (see below). Reports live inside Dispatch;
+  Disputes and Subscriptions are unstarted. An order now runs the whole way: priced, paid,
+  dispatched, photographed, reviewed and accepted.
 - DB schema changes go through **EF Core migrations only** — no hand-written DDL, no manual
   `ALTER TABLE` against a running database.
 - Frontend consumes the backend over REST; it does not talk to Postgres or S3 directly.
@@ -90,6 +93,73 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
   `InitialIdentity` migration; `StatusColumnsToText` then moved every status-like column from
   `varchar(n)` to `text` + CHECK, per CONVENTIONS.md.
 - SMS login returns 501: no SMS provider is wired up. Email is the only working channel.
+
+## Orders module (implemented)
+
+- `OrderStateMachine` (`Models/Orders/OrderStateMachine.cs`) owns the 16-status lifecycle and is
+  the only authority on transitions. `OrderService.Move()` is the only place `order.Status` is
+  ever written — nothing else assigns to it.
+- Internal statuses are an operational vocabulary. `OrderStatusPresentation` maps each to the
+  text and single CTA a client sees; never show a raw status to a client.
+- `OrderStatuses.QueueGroup()` sorts a status into `staff` / `customer` / `in_flight` / `done`
+  and is what the dispatcher queue groups by. A new status must join exactly one group —
+  `QueueGroupingTests` fails otherwise, because an ungrouped status would silently vanish from
+  the queue.
+- An order snapshots the package version it was sold under (code, version, title, price,
+  warranty). Editing the catalogue afterwards must never change a sold order.
+- Estimates are versioned and acceptance is version-specific (BR-002): publishing a correction
+  supersedes the previous version and invalidates any acceptance that was not yet paid.
+
+## Payments module (stub provider)
+
+- `IPaymentProvider` has three operations and deliberately no "mark as paid". A payment becomes
+  paid because `GetAsync` said so — never because a callback claimed it. The callback endpoint
+  reads the reference and nothing else, then re-fetches (BR-007).
+- The provider is chosen **by environment, not configuration**, exactly like the email sender.
+  `StubPaymentProvider` throws if constructed in Production; Production registers a provider that
+  throws at resolve time until the YooKassa adapter exists, so a build with no way to take money
+  fails loudly instead of looking healthy.
+- The stub confirms nothing on its own — a payment sits in `waiting_for_capture` until something
+  explicitly confirms it, so the code that waits for confirmation is actually exercised. The dev
+  endpoint `POST /api/v1/dev/payments/{id}/confirm` marks the stub succeeded and then makes the
+  application re-read it; it never shortcuts to "order paid".
+- `payments.order_ref` is unique — that index is what makes a retry idempotent rather than a
+  double charge. Refunds are implemented, not stubbed; a full refund moves the order to
+  `refunded`, a partial one does not (the work still happened).
+
+## Dispatch module (implemented)
+
+- A `Visit` is one executor's trip. The package checklist is **copied onto the visit** at
+  assignment: QA measures work against what was promised when it was sold, so a checklist still
+  pointing at a live catalogue row would let an edit move that line afterwards.
+- Only one live visit per order — two offers out at once means two people at one grave.
+- A report is refused unless every checklist line is answered and there is at least one `before`
+  and one `after` photo (BR-008). Anything but `done` requires a note, enforced in the service
+  **and** by a CHECK constraint.
+- QA sits between the executor and the client: `GetReportForClientAsync` returns only an
+  `approved` visit, and 404s otherwise (BR-010). Sending work back requires a reason.
+- `VisitDto` (staff/executor) carries `PayoutRub`; `VisitReportDto` (client) is a **separate type**
+  that does not have the field at all. Not filtered — absent, so no future field can reintroduce
+  it. `VisitFlowTests` asserts the figure appears nowhere in the client's response body.
+- Media `owner_type=visit`: written only by the assigned executor while the visit is still
+  actionable; read by that executor, by reviewing staff, and by the client only once approved.
+
+## Staff surfaces
+
+- `/api/v1/admin/catalog` — admin + superadmin only. Prices and package composition are the
+  commercial terms of the contract with every client.
+- `/api/v1/admin/orders` — dispatcher as well, since pricing an order is a dispatcher's day job.
+- Frontend mirrors this: `app/admin/layout.tsx` admits every staff role, `/admin/queue` is open
+  to all of them, and `/admin/catalog` + `/admin/plans` 404 for anyone but an admin. The nav
+  hides what a role cannot reach, but the API refuses it regardless.
+- Order photos: staff who need to look at a grave to do their job (dispatcher, qa, support,
+  admin, superadmin) may **read** `owner_type=order` media; only the client who owns the order
+  may write it, and only while the order is still theirs to edit. Finance is excluded on purpose.
+- `/admin/qa` — the report review queue, open to qa + dispatcher + admin; approving is qa/admin
+  only, so the person who arranged the work is not the only one who can sign it off.
+- `/executor` — the executor's own visits. Executors are not staff: every read is scoped to the
+  caller in the service, so there is no id that reaches another executor's job.
+- Refunds are `finance`/`admin` only. A dispatcher prices work; they do not move money.
 
 ## Security & data rules
 
@@ -154,6 +224,12 @@ proof of completion, pay online, raise a dispute if the result is unsatisfactory
 
 Rules that decide work here:
 
+- **A filled button keeps its white label on hover.** Every variant must state `hover:text-*`
+  explicitly. A bare Tailwind colour utility is specificity (0,1,0) and loses to the global
+  `a:hover { color: var(--accent-deep) }` in `globals.css` (0,1,1) — on a `ButtonLink`, which
+  renders an `<a>`, the label then takes the link colour and vanishes into the fill.
+  `hover:text-*` is (0,2,0) and wins. Check anchor-rendered variants too: only they hit the
+  global rule.
 - **Escalation triggers are `HIGH` on sight** — a control with no accessible name, a keyboard-
   reachable control with no visible focus ring, content clipped at 320px or 200% zoom, text
   failing its contrast ratio, meaning carried by colour alone, an error naming no way to recover.
@@ -171,7 +247,7 @@ Backend (`backend/`):
 
 ```bash
 dotnet build PamyatRyadom.sln
-dotnet test PamyatRyadom.sln     # 106 tests (health + Identity). xUnit + Testcontainers:
+dotnet test PamyatRyadom.sln     # 200 tests. xUnit + Testcontainers:
                                  # needs a running Docker daemon, otherwise nearly every
                                  # test fails on "cannot connect to the Docker daemon"
 dotnet ef migrations add <Name> --project src/PamyatRyadom.Api --startup-project src/PamyatRyadom.Api

@@ -33,5 +33,21 @@ public sealed class ChecklistTemplate
 /// <summary>Shape of one entry in <see cref="ChecklistTemplate.Items"/>.</summary>
 public sealed record ChecklistItem(string Key, string Title, bool Optional = false);
 
+/// <summary>
+/// How checklist JSON is written and read.
+///
+/// One place, because a writer and a reader that disagree about casing produce items whose every
+/// field is null — which the database catches as a not-null violation somewhere far away from the
+/// mismatch that caused it.
+/// </summary>
+public static class ChecklistJson
+{
+    public static readonly JsonSerializerOptions Options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+}
+
 /// <summary>Shape of one entry in <see cref="ChecklistTemplate.RequiredMedia"/>.</summary>
 public sealed record RequiredMediaRule(string Phase, int MinCount, string Description);

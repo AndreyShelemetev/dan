@@ -19,7 +19,7 @@ interface UploadSession {
   expiresInSeconds: number;
 }
 
-export const MEDIA_OWNER = { burialSite: "burial_site" } as const;
+export const MEDIA_OWNER = { burialSite: "burial_site", order: "order", visit: "visit" } as const;
 
 /** What the picker offers and the backend accepts. HEIC is included because it is what an
  *  iPhone shoots by default. */
@@ -36,6 +36,12 @@ export function listMedia(
     `/media?ownerType=${encodeURIComponent(ownerType)}&ownerId=${ownerId}`,
     { headers: cookieHeader ? { Cookie: cookieHeader } : undefined },
   );
+}
+
+/** Splits a visit's photos into the two sets the report is built from. "Before" and "after" only
+ *  mean anything as a pair, so they are shown and uploaded separately. */
+export function byPhase(assets: MediaAsset[], phase: string): MediaAsset[] {
+  return assets.filter((a) => a.phase === phase);
 }
 
 export function deleteMedia(assetId: number): Promise<{ deleted: boolean }> {

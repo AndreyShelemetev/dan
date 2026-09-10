@@ -43,6 +43,9 @@ export interface OrderSummary {
   preferredFrom: string | null;
   preferredTo: string | null;
   createdAt: string;
+  /** Which pile this sits in on the staff queue. Decided by the server so the UI can't classify
+   *  a status differently from the service that selected it. */
+  queueGroup: "staff" | "customer" | "in_flight" | "done";
 }
 
 export interface Order extends OrderSummary {

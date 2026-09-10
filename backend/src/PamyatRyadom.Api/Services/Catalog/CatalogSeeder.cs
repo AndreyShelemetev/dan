@@ -80,8 +80,8 @@ public sealed class CatalogSeeder : ICatalogSeeder
     private static JsonDocument Media(params RequiredMediaRule[] rules) =>
         JsonDocument.Parse(JsonSerializer.Serialize(rules, JsonOptions));
 
-    private static readonly JsonSerializerOptions JsonOptions =
-        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    /// <summary>Shared with every reader — see <see cref="ChecklistJson"/>.</summary>
+    private static readonly JsonSerializerOptions JsonOptions = ChecklistJson.Options;
 
     private static readonly DateTimeOffset PublishedAt = new(2026, 8, 26, 0, 0, 0, TimeSpan.Zero);
 

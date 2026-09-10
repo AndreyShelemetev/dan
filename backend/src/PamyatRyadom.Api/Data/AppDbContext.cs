@@ -5,6 +5,8 @@ using PamyatRyadom.Api.Models.BurialSites;
 using PamyatRyadom.Api.Models.Catalog;
 using PamyatRyadom.Api.Models.Media;
 using PamyatRyadom.Api.Models.Orders;
+using PamyatRyadom.Api.Models.Dispatch;
+using PamyatRyadom.Api.Models.Payments;
 
 namespace PamyatRyadom.Api.Data;
 
@@ -52,6 +54,14 @@ public sealed class AppDbContext : DbContext
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
     public DbSet<Estimate> Estimates => Set<Estimate>();
     public DbSet<EstimateLine> EstimateLines => Set<EstimateLine>();
+
+    // Payments: one row per attempt. Status is whatever the provider says when asked, never what
+    // a callback claimed.
+    public DbSet<Payment> Payments => Set<Payment>();
+
+    // Dispatch: the visit and the photo report that comes back from it — the actual deliverable.
+    public DbSet<Visit> Visits => Set<Visit>();
+    public DbSet<VisitChecklistItem> VisitChecklistItems => Set<VisitChecklistItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

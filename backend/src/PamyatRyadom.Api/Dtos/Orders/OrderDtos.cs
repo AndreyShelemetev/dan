@@ -20,6 +20,11 @@ public sealed class OrderSummaryDto
     public DateTimeOffset? PreferredFrom { get; init; }
     public DateTimeOffset? PreferredTo { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
+
+    /// <summary>Which pile this belongs in on the staff queue: "staff", "customer", "in_flight"
+    /// or "done". Server-side so the queue UI cannot classify a status differently from the
+    /// service that selected it.</summary>
+    public string QueueGroup { get; init; } = string.Empty;
 }
 
 public sealed class OrderDto

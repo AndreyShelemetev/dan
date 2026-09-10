@@ -102,6 +102,11 @@ export const adminCatalog = {
   archivePackage: (id: number) =>
     apiFetch<AdminPackage>(`${base}/packages/${id}/archive`, { method: "POST" }),
 
+  /** Only a draft nothing was sold under. Published versions are archived instead — an order
+   *  pointing at one has to keep pointing at something. */
+  deletePackage: (id: number) =>
+    apiFetch<{ deleted: boolean }>(`${base}/packages/${id}`, { method: "DELETE" }),
+
   /** Copies a version into a new draft — the supported way to change what is already on sale. */
   newPackageVersion: (id: number, version: string) =>
     apiFetch<AdminPackage>(`${base}/packages/${id}/versions`, { method: "POST", body: { version } }),
@@ -117,6 +122,8 @@ export const adminCatalog = {
   publishPlan: (id: number) => apiFetch<AdminPlan>(`${base}/plans/${id}/publish`, { method: "POST" }),
 
   archivePlan: (id: number) => apiFetch<AdminPlan>(`${base}/plans/${id}/archive`, { method: "POST" }),
+
+  deletePlan: (id: number) => apiFetch<{ deleted: boolean }>(`${base}/plans/${id}`, { method: "DELETE" }),
 };
 
 export const STATUS_LABEL: Record<string, string> = {

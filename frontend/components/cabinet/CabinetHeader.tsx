@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { Button } from "@/components/ui/Button";
+import { AccountMenu } from "@/components/site/AccountMenu";
 
 /**
  * Header for the signed-in area. Deliberately quieter than the public
  * SiteHeader: someone already inside their account is here to do one thing,
  * so the marketing nav is dropped and only the wordmark, the account it
  * belongs to and the way out remain.
+ *
+ * The account control is the same AccountMenu the public header uses. Two headers with two
+ * different ways to sign out is how one of them ends up behaving differently — and this is where
+ * a staff member actually lands after logging in, so it is also where they need the way into the
+ * admin panel.
  */
 export function CabinetHeader() {
-  const { user, logout } = useAuth();
-
   return (
     <header className="border-b border-border bg-surface">
       <div className="mx-auto flex w-full max-w-content items-center justify-between gap-4 px-6 py-4 lg:px-14">
@@ -41,16 +43,7 @@ export function CabinetHeader() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-3">
-          {user?.email ? (
-            <span className="hidden text-sm text-ink-2 sm:inline" title={user.email}>
-              {user.email}
-            </span>
-          ) : null}
-          <Button variant="secondary" size="sm" onClick={() => void logout()}>
-            Выйти
-          </Button>
-        </div>
+        <AccountMenu />
       </div>
     </header>
   );

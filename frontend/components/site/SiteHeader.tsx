@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { Button } from "@/components/ui/Button";
-import { ButtonLink } from "@/components/ui/ButtonLink";
+import { AccountMenu } from "@/components/site/AccountMenu";
 import { cn } from "@/lib/ui/cn";
 
 /**
@@ -16,17 +14,16 @@ import { cn } from "@/lib/ui/cn";
  * those are the two things a one-handed mobile visitor actually reaches for.
  */
 const NAV_ITEMS = [
-  { label: "Услуги", href: "#services" },
-  { label: "Как это работает", href: "#how-it-works" },
-  { label: "Доверие и гарантии", href: "#trust" },
-  { label: "Вопросы", href: "#support" },
+  { label: "Услуги", href: "/services" },
+  { label: "Как это работает", href: "/how-it-works" },
+  { label: "Доверие и гарантии", href: "/trust" },
+  { label: "Вопросы", href: "/faq" },
 ] as const;
 
 const NAV_LINK_CLASS =
   "flex min-h-hit items-center text-sm text-ink-2 no-underline transition-colors duration-ds ease-ds hover:text-accent-deep";
 
 export function SiteHeader() {
-  const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -54,28 +51,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <LanguageIndicator className="hidden sm:flex" />
 
-          {isAuthenticated ? (
-            <>
-              {user?.displayName && (
-                <span className="hidden max-w-[12ch] truncate text-sm text-ink-2 md:inline">
-                  {user.displayName}
-                </span>
-              )}
-              {/* The primary action for a signed-in visitor is getting to their
-                  own records, not signing out — so the cabinet takes the filled
-                  pill and «Выйти» steps back to a quiet link. */}
-              <ButtonLink href="/cabinet" size="sm">
-                Кабинет
-              </ButtonLink>
-              <Button variant="ghost" size="sm" onClick={() => void logout()}>
-                Выйти
-              </Button>
-            </>
-          ) : (
-            <ButtonLink href="/login" variant="secondary" size="sm">
-              Войти
-            </ButtonLink>
-          )}
+          <AccountMenu />
 
           <button
             type="button"

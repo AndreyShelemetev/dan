@@ -121,8 +121,11 @@ envelope, so a client never has to branch on error format.
 
 ## 4. Module boundaries
 
-Only **Identity** exists in code today; the rest describe intended boundaries for the tasks that
-build them.
+**Identity**, **BurialSites**, **Catalog**, **Orders/Estimates**, **Media**, **Payments** and
+**Dispatch/Visits** exist in code today; Disputes and Subscriptions describe intended boundaries
+for the tasks that build them. An order now runs the whole way — placed, priced, paid, dispatched,
+photographed, reviewed and accepted — with one qualification: the payment provider is a stub, so
+no money actually moves.
 
 - **Identity** *(implemented)* — accounts, roles, email/SMS OTP login, opaque session tokens (hash
   stored server-side), MFA for privileged roles, consent logging. Owns who is allowed to do what.
@@ -132,24 +135,50 @@ build them.
   `InitialIdentity` migration. Access control is the `[RequireRole]` action filter, not ASP.NET
   Core's authentication middleware — the session is an opaque cookie resolved against the DB on
   every request, so there is no `ClaimsPrincipal` to populate.
-- **BurialSites** — the burial site as a real-world object: cemetery, plot location, the
-  deceased's details, photos/notes tied to the site itself (not to a specific visit).
-- **Catalog** — the sellable service catalog: care packages, one-off services, add-ons, and
-  their prices. Read-mostly; drives what a client can order.
-- **Orders/Estimates** — an order placed by a client against a burial site and a catalog
-  selection, its estimate/price breakdown, and its lifecycle from created through paid,
-  fulfilled, or cancelled.
-- **Dispatch/Visits** — assigns a paid order to an executor as a scheduled visit, tracks visit
-  status (assigned, en route, in progress, completed, missed), and is the only module that knows
-  executor identity and payout terms.
-- **Media** — presigned upload/download URLs against the S3-compatible bucket, and the record of
-  which photo/video belongs to which visit. Photos are permanent private records, not
-  short-retention outputs — nothing here auto-expires.
-- **Payments** — YooKassa integration: creating redirect-confirmation payments, verifying status
-  by re-fetching from the provider (never trusting webhook bodies), idempotent writes via
-  `order_ref` + `Idempotence-Key`, and refunds.
-- **Reports/Disputes** — the client-facing visit report (photos + notes) and the dispute flow
-  when a client is unsatisfied with a completed visit, through to resolution.
+- **BurialSites** *(implemented)* — the burial site as a real-world object: cemetery, plot
+  location, the deceased's details, photos/notes tied to the site itself (not to a specific
+  visit). Access is a per-user permission (`view` / `manage`) resolved by
+  `IBurialSiteService.ResolvePermissionAsync`, so a family can share one record.
+- **Catalog** *(implemented)* — the sellable service catalog: care packages, subscription plans
+  and their checklists. Versioned: a published version is immutable and a change means a new
+  version, because an order has to keep the terms it was sold under. Admin-only to edit
+  (`/api/v1/admin/catalog`), public to read.
+- **Orders/Estimates** *(implemented)* — an order placed by a client against a burial site and a
+  catalog selection, its versioned estimate, and its 16-status lifecycle.
+  `Models/Orders/OrderStateMachine.cs` holds the transition table and is the single authority;
+  `OrderService.Move()` is the only writer of `order.Status`. Acceptance is version-specific:
+  publishing a corrected estimate supersedes the previous one and invalidates an acceptance that
+  was not yet paid (BR-002). `OrderStatuses.QueueGroup()` classifies a status for the staff
+  queue, and every status must belong to exactly one group.
+- **Dispatch/Visits** *(implemented)* — assigns a paid order to an executor as a visit, carries
+  the checklist copied onto that visit at assignment, and holds the photo report through QA. The
+  only module that knows payout terms, and it keeps them out of client-facing shapes structurally:
+  `VisitDto` has `PayoutRub`, `VisitReportDto` does not have the field at all. QA stands between a
+  filed report and the client — `GetReportForClientAsync` returns only an approved visit (BR-010) —
+  and a report is refused without every checklist line answered plus a "before" and an "after"
+  photograph (BR-008).
+- **Media** *(implemented for burial sites and orders)* — presigned upload/download URLs against
+  the S3-compatible bucket, and the record of which photo/video belongs to which owning record.
+  The bytes never pass through the API process: the browser PUTs straight to storage, and only
+  the completion call verifies the file really is an image, strips EXIF by re-encoding to WebP
+  and builds a thumbnail. Access is decided per owner type in `CanReadOwnerAsync` /
+  `CanWriteOwnerAsync`, which deny by default — a new owner type cannot inherit open access.
+  Order photos are readable by the staff who need them to work (dispatcher, qa, support, admin,
+  superadmin) and writable only by the client who owns the order, while it is still editable.
+  Photos are permanent private records, not short-retention outputs — nothing here auto-expires.
+- **Payments** *(infrastructure implemented, provider stubbed)* — `IPaymentProvider` is the whole
+  contract: create, read, refund. There is no "mark as paid", by design — a payment becomes paid
+  because the provider was asked directly, so a callback can only trigger the asking and can never
+  assert an outcome. Idempotency is a unique `payments.order_ref` index plus a stored
+  `Idempotence-Key`, which makes a retry the same charge rather than a second one. Refunds are part
+  of the interface rather than a later addition; a full refund moves the order to `refunded`, a
+  partial one leaves it alone because the work still happened. The provider is selected by
+  `IHostEnvironment`, never by configuration: `StubPaymentProvider` throws if constructed in
+  Production, and Production registers a provider that throws on resolve until the YooKassa adapter
+  is written — a deployment with no way to take money fails loudly instead of looking healthy.
+- **Reports/Disputes** — the report itself lives in Dispatch (above). What remains here is the
+  dispute flow when a client is unsatisfied: an order can be moved to `disputed` today, but there
+  is no case record, no resolution path and no refund trigger behind it yet.
 - **Subscriptions** — recurring care plans that generate orders on a schedule, and their
   billing/renewal/cancellation lifecycle.
 - **Audit** — an append-only log of security- and business-relevant events (logins, status

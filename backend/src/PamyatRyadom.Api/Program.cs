@@ -1,3 +1,4 @@
+using PamyatRyadom.Api.Dtos.Payments;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,9 @@ using PamyatRyadom.Api.Services.Catalog;
 using PamyatRyadom.Api.Services.Dev;
 using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
+using PamyatRyadom.Api.Services.Dispatch;
 using PamyatRyadom.Api.Services.Orders;
+using PamyatRyadom.Api.Services.Payments;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -117,6 +120,29 @@ builder.Services.AddScoped<ICatalogAdminService, CatalogAdminService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IEstimateService, EstimateService>();
 
+// Payments. The provider is chosen by environment, not by configuration: StubPaymentProvider
+// reports payments that never happened, so nothing in appsettings may be able to put it in front
+// of a real customer. It throws in Production as a second lock on the same door.
+builder.Services.Configure<PaymentOptions>(builder.Configuration.GetSection(PaymentOptions.SectionName));
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+if (builder.Environment.IsProduction())
+{
+    // No YooKassa adapter yet. Failing at startup is the honest outcome — a production build that
+    // silently had no way to take money would look healthy right up until a client tried to pay.
+    builder.Services.AddScoped<IPaymentProvider>(_ => throw new InvalidOperationException(
+        "No payment provider is configured for Production. Wire up the YooKassa adapter before deploying."));
+}
+else
+{
+    builder.Services.AddSingleton<StubPaymentProvider>();
+    builder.Services.AddScoped<IPaymentProvider>(sp => sp.GetRequiredService<StubPaymentProvider>());
+}
+
+// Dispatch: the visit and the photo report. The report is the deliverable, so QA sits between
+// an executor filing it and a client seeing it.
+builder.Services.AddScoped<IVisitService, VisitService>();
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddScoped<IDevAccountSeeder, DevAccountSeeder>();
@@ -128,14 +154,18 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     // Login-code requests: 5 per 10 minutes per (IP, destination) — enough for a user who mistypes
-    // and retries, far too little to email-bomb an address or farm codes. The destination half of the
-    // key is captured by middleware below, since a partition factory cannot read the request body.
+    // and retries, far too little to email-bomb an address or farm codes. Development gets a
+    // looser limit (see PermitLimitFor); every other environment gets the five. The destination
+    // half of the key is captured by middleware below, since a partition factory cannot read the
+    // request body.
+    var otpPermitLimit = AuthRateLimitPolicies.PermitLimitFor(builder.Environment);
+
     options.AddPolicy(AuthRateLimitPolicies.RequestOtp, httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             AuthRateLimitPolicies.BuildOtpPartitionKey(httpContext),
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = AuthRateLimitPolicies.RequestOtpPermitLimit,
+                PermitLimit = otpPermitLimit,
                 Window = AuthRateLimitPolicies.RequestOtpWindow
             }));
 
@@ -263,6 +293,31 @@ if (app.Environment.IsDevelopment())
         return code is null
             ? Results.NotFound(ApiResponse<object>.Fail(ApiError.NotFound("Код не найден.")))
             : Results.Ok(ApiResponse<object>.Ok(new { destination, code }));
+    });
+
+    // Stands in for the client finishing on the provider's page. Development only, and it still
+    // goes the long way round: it marks the stub payment succeeded and then makes the application
+    // re-read it, so the code that turns a confirmation into a paid order is the same code that
+    // will run against YooKassa. A shortcut straight to "order paid" would test nothing.
+    app.MapPost("/api/v1/dev/payments/{paymentId:long}/confirm",
+        async (long paymentId, AppDbContext db, StubPaymentProvider stub, IPaymentService payments) =>
+    {
+        var providerId = await db.Payments
+            .Where(p => p.Id == paymentId)
+            .Select(p => p.ProviderPaymentId)
+            .FirstOrDefaultAsync();
+
+        if (providerId is null)
+        {
+            return Results.NotFound(ApiResponse<object>.Fail(ApiError.NotFound("Платёж не найден.")));
+        }
+
+        stub.ConfirmForTesting(providerId);
+
+        var synced = await payments.SyncAsync(paymentId);
+        return synced.Succeeded
+            ? Results.Ok(ApiResponse<PaymentDto>.Ok(synced.Data!))
+            : Results.Json(ApiResponse<PaymentDto>.Fail(synced.Errors.ToArray()), statusCode: synced.StatusCode);
     });
 }
 

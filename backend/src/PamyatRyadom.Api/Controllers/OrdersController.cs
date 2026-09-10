@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PamyatRyadom.Api.Dtos.Common;
+using PamyatRyadom.Api.Dtos.Dispatch;
 using PamyatRyadom.Api.Dtos.Orders;
 using PamyatRyadom.Api.Services.Auth;
 using PamyatRyadom.Api.Services.Common;
@@ -18,8 +19,13 @@ namespace PamyatRyadom.Api.Controllers;
 public sealed class OrdersController : AuthorizedControllerBase
 {
     private readonly IOrderService _orders;
+    private readonly Services.Dispatch.IVisitService _visits;
 
-    public OrdersController(IOrderService orders) => _orders = orders;
+    public OrdersController(IOrderService orders, Services.Dispatch.IVisitService visits)
+    {
+        _orders = orders;
+        _visits = visits;
+    }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<OrderSummaryDto>>>> List(CancellationToken ct) =>
@@ -54,6 +60,25 @@ public sealed class OrdersController : AuthorizedControllerBase
     public async Task<ActionResult<ApiResponse<OrderDto>>> RejectEstimate(
         long id, [FromBody] RejectEstimateDto dto, CancellationToken ct) =>
         Envelope(await _orders.RejectEstimateAsync(CurrentUserId, id, dto.Version, dto.Reason, ct));
+
+    /// <summary>The photo report, once QA has approved it. Before that this is a 404 — an
+    /// unreviewed report is a claim, not evidence (BR-010).</summary>
+    [HttpGet("{id:long}/report")]
+    public async Task<ActionResult<ApiResponse<VisitReportDto>>> Report(long id, CancellationToken ct) =>
+        Envelope(await _visits.GetReportForClientAsync(CurrentUserId, id, ct));
+
+    /// <summary>The client accepts the work. Closes the order — the warranty window still allows
+    /// a complaint afterwards (BR-012).</summary>
+    [HttpPost("{id:long}/acceptance")]
+    public async Task<ActionResult<ApiResponse<OrderDto>>> AcceptWork(long id, CancellationToken ct) =>
+        Envelope(await _orders.AcceptWorkAsync(CurrentUserId, id, ct));
+
+    /// <summary>The client is not satisfied. A reason is required: a dispute with no statement of
+    /// what is wrong cannot be resolved, only argued about.</summary>
+    [HttpPost("{id:long}/dispute")]
+    public async Task<ActionResult<ApiResponse<OrderDto>>> Dispute(
+        long id, [FromBody] CancelOrderDto dto, CancellationToken ct) =>
+        Envelope(await _orders.DisputeAsync(CurrentUserId, id, dto.Reason, ct));
 
     private ActionResult<ApiResponse<T>> Envelope<T>(ServiceResult<T> result) =>
         result.Succeeded && result.Data is not null

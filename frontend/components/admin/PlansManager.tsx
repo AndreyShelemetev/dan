@@ -142,14 +142,28 @@ export function PlansManager({
                           {plan.editable ? "Изменить" : "Смотреть"}
                         </Button>
                         {plan.status === "draft" ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={busyId === plan.id}
-                            onClick={() => void run(plan.id, () => adminCatalog.publishPlan(plan.id))}
-                          >
-                            Опубликовать
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={busyId === plan.id}
+                              onClick={() => void run(plan.id, () => adminCatalog.publishPlan(plan.id))}
+                            >
+                              Опубликовать
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={busyId === plan.id}
+                              onClick={() => {
+                                if (!window.confirm(`Удалить черновик плана «${plan.title}»? Это необратимо.`)) return;
+                                void run(plan.id, () => adminCatalog.deletePlan(plan.id));
+                              }}
+                              className="text-danger hover:bg-danger-soft hover:text-danger"
+                            >
+                              Удалить
+                            </Button>
+                          </>
                         ) : null}
                         {plan.status === "published" ? (
                           <Button
