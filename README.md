@@ -67,6 +67,32 @@ For a production deploy, use the explicit override instead of the dev one:
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
+## Verifying changes
+
+A fresh sandbox (cloud session or a clean checkout) has neither the .NET SDK nor
+`frontend/node_modules` installed. One script gets both ready:
+
+```bash
+bash scripts/verify-setup.sh
+```
+
+It installs the .NET SDK into `/opt/dotnet-sdk` (skipped if `dotnet` is already on `PATH`) and
+runs `npm ci` in `frontend/`. After it finishes, the standard checks are:
+
+```bash
+export PATH="/opt/dotnet-sdk:$PATH"        # only if the script installed the SDK
+dotnet build backend/PamyatRyadom.sln
+
+cd frontend
+npx tsc --noEmit
+npm run lint
+npm run build
+```
+
+`dotnet test` additionally needs a running Docker daemon (the test project uses Testcontainers
+for Postgres); without one, tests that need a database fail with
+`DockerUnavailableException` rather than a real assertion failure.
+
 ## Structure
 
 - `backend/` — ASP.NET Core Web API (`PamyatRyadom.Api`) + xUnit test project, EF Core/Npgsql.
