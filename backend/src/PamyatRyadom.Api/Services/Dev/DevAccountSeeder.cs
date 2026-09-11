@@ -1,17 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Models.Auth;
+using PamyatRyadom.Api.Models.BurialSites;
 
 namespace PamyatRyadom.Api.Services.Dev;
 
 /// <summary>
 /// Test accounts, one per role, so a role-specific screen can be opened without editing the
-/// database by hand.
+/// database by hand — plus one test cemetery, since cemeteries are staff-curated reference data
+/// (CLAUDE.md) with no seeder of their own, and a client cannot place an order against a burial
+/// site without one existing to attach it to.
 ///
 /// Development only, and structurally so: this is registered and invoked inside the
 /// <c>IsDevelopment()</c> branch in Program.cs. It is not gated by a configuration value, because
-/// a flag that seeds a ready-made admin account into production is exactly the kind of thing
-/// that gets switched on by accident.
+/// a flag that seeds a ready-made admin account (or a fake cemetery) into production is exactly
+/// the kind of thing that gets switched on by accident.
 ///
 /// The accounts carry no password and no session — they are reached through the normal
 /// email-code flow, and in development the code appears under the sign-in field. So an account
@@ -83,6 +86,18 @@ public sealed class DevAccountSeeder : IDevAccountSeeder
             });
 
             _logger.LogInformation("Seeded dev account {Email} with role {Role}", email, role);
+        }
+
+        if (!await _db.Cemeteries.AnyAsync(ct))
+        {
+            _db.Cemeteries.Add(new Cemetery
+            {
+                Name = "Тестовое кладбище",
+                Region = "Московская область",
+                Status = CemeteryStatuses.Active,
+            });
+
+            _logger.LogInformation("Seeded a development cemetery");
         }
 
         if (_db.ChangeTracker.HasChanges())

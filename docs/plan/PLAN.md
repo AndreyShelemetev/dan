@@ -56,14 +56,14 @@
   - Верификация: стандартная + запустить сам скрипт на чистом PATH и убедиться, что после него `dotnet build` и три frontend-команды проходят.
   - Готово, когда: одна команда доводит песочницу до состояния, в котором проходит вся стандартная верификация, и это описано в README.
 
-- [ ] D02. CI: сборка, тесты и линтеры на каждый PR
+- [x] D02. CI: сборка, тесты и линтеры на каждый PR
   - Что: `.github/workflows/ci.yml` — джоба backend (`dotnet build` + `dotnet test`; в раннере Docker есть, значит Testcontainers работают и 200 тестов гоняются по-настоящему) и джоба frontend (`npm ci`, `npx tsc --noEmit`, `npm run lint`, `npm run build`). Кэш NuGet и npm. Запуск на pull_request и push в main.
   - Где: `.github/workflows/ci.yml`.
   - Зависит от: —
   - Верификация: стандартная + PR показывает обе джобы зелёными; в логе backend-джобы видно `Passed: 200`.
   - Готово, когда: PR без зелёного CI виден как красный, и `dotnet test` наконец выполняется хоть где-то.
 
-- [ ] D03. CI: e2e-джоба на поднятом стеке
+- [x] D03. CI: e2e-джоба на поднятом стеке
   - Что: отдельная джоба (или workflow), которая поднимает `docker compose up -d --build`, применяет миграции `bash deploy/migrate.sh`, ждёт healthcheck api и гоняет `npm run test:e2e` против него. Артефакты Playwright (trace на падении) прикладываются к запуску.
   - Где: `.github/workflows/e2e.yml` (или job в `ci.yml`), при необходимости — правки `frontend/playwright.config.ts` под `E2E_BASE_URL`/`E2E_API_URL` из окружения.
   - Зависит от: D02
@@ -293,3 +293,5 @@
 - 2026-09-10 — D00 — план создан kickoff-сессией; dotnet build: зелёный (SDK ставился вручную, в песочнице не предустановлен); dotnet test: 65/200, остальные 135 — DockerUnavailableException; frontend: build, tsc и lint зелёные; e2e в песочнице не запускается (нужен Docker)
 - 2026-09-10 — D04 — решение пользователя: подписки после запуска, S1–S4 вынесены в «После запуска»; отмечены предпосылки П2 (SMTP) и П3 (VPS/домен/TLS); правка внесена прямо в main без сборки — изменения только в `docs/plan/`
 - 2026-09-10 — D01 — добавлен `scripts/verify-setup.sh` (ставит .NET SDK 10 через `dotnet-install.sh`, если `dotnet` не в PATH; делает `npm ci` во frontend), README дополнен разделом «Verifying changes», PLAN.md — раздел верификации ссылается на скрипт; frontend: `npm ci`/`tsc --noEmit`/`lint`/`build` зелёные (23 маршрута). `dotnet build` в этой сессии не перепроверен: сетевая политика песочницы отклонила CONNECT на `builds.dotnet.microsoft.com` (403) при установке SDK, хотя тот же метод (`dot.net/v1/dotnet-install.sh`) сработал у kickoff-сессии — похоже на разницу политики между сессиями, а не баг скрипта; `apt-get install dotnet-sdk-10.0` тоже не помог — пакет 10.0.104 отсутствует в текущем зеркале Ubuntu (404). Следующей сессии стоит перепроверить `dotnet build` через скрипт там, где `dot.net` доступен.
+- 2026-09-11 — D02 — добавлен `.github/workflows/ci.yml`: джоба backend (`dotnet restore`/`build`/`test` на `actions/setup-dotnet@v4` 10.0.x, кэш NuGet) и джоба frontend (`npm ci`/`tsc --noEmit`/`lint`/`build`, кэш npm через `actions/setup-node@v4`), триггеры `pull_request` и `push` на `main`; в этой сессии `bash scripts/verify-setup.sh` установил SDK без сетевых ошибок (в отличие от предыдущей сессии). Стандартная верификация зелёная: `dotnet build` — 0 ошибок; frontend `tsc --noEmit`/`lint`/`build` — зелёные (23 маршрута); `dotnet test`: 65/200, остальное DockerUnavailable (песочница без Docker-демона, ожидаемо).
+- 2026-09-11 — D03 — добавлен `.github/workflows/e2e.yml` (отдельный workflow, не job в `ci.yml`): `docker compose up -d --build` (override подхватывается автоматически, значит `ASPNETCORE_ENVIRONMENT=Development`, dev-сидер и `/dev/last-otp` доступны), ожидание healthcheck postgres, `bash deploy/migrate.sh` (применяет миграции и рестартит `api` — существующий контейнер не пересоздаётся, так что окружение осталось Development), ожидание готовности api и frontend поллингом, установка Playwright-браузеров и `npm run test:e2e` с явными `E2E_BASE_URL`/`E2E_API_URL` (совпадают со значениями по умолчанию в спеках — `playwright.config.ts` править не пришлось), отчёт и `test-results/` прикладываются как artifact при падении, стек гасится в `if: always()`. Не проверено в песочнице — Docker-демон недоступен (см. D01/README), сам workflow валиден только на реальном раннере; закрывается зелёным прогоном на этом PR. Стандартная верификация (не изменяла backend/frontend код): без изменений от предыдущей сессии.
