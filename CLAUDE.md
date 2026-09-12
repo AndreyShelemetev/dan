@@ -272,7 +272,9 @@ npm run dev
 npm run build
 npx tsc --noEmit    # type check only; `npm run build` also runs it
 npm run lint
-npm run test:e2e    # Playwright is configured (testDir ./e2e) but no specs exist yet
+npm run test:e2e    # 4 specs in frontend/e2e/ (account-menu, button-hover-contrast,
+                     # login-consent, order-photos); needs the stack up (E2E_BASE_URL),
+                     # so it only actually runs in CI, not in this sandbox
 ```
 
 Stack (repo root):
