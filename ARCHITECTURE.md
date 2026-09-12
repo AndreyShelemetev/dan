@@ -127,8 +127,10 @@ for the tasks that build them. An order now runs the whole way — placed, price
 photographed, reviewed and accepted — with one qualification: the payment provider is a stub, so
 no money actually moves.
 
-- **Identity** *(implemented)* — accounts, roles, email/SMS OTP login, opaque session tokens (hash
-  stored server-side), MFA for privileged roles, consent logging. Owns who is allowed to do what.
+- **Identity** *(implemented)* — accounts, roles, email OTP login (the API's request shape
+  accepts an `sms` channel too, but it returns `501` — no SMS provider is wired up, and the login
+  form never offers it), opaque session tokens (hash stored server-side), MFA for privileged
+  roles, consent logging. Owns who is allowed to do what.
   Lives in `Services/Auth/` + `Controllers/AuthController.cs`, exposed under `/api/v1/auth`. Its
   9 tables (`users`, `auth_identities`, `auth_sessions`, `otp_codes`, `mfa_secrets`,
   `consent_logs`, `legal_documents`, `legal_acceptances`, `security_audit_logs`) ship in the

@@ -8,10 +8,17 @@ code can be ported across with minimal friction.
 
 ## Status
 
-The **Identity** module is implemented end to end: passwordless email OTP login, opaque session
-cookies, role checks, TOTP MFA enrollment, consent logging, and the 9-table identity schema. The
-public site renders design direction A («Тихий сад»). Every other module — burial sites, catalog,
-orders, dispatch, media/S3, YooKassa payments, reports and disputes — is not started yet.
+Implemented end to end: **Identity** (passwordless email OTP login, opaque session cookies, role
+checks, TOTP MFA enrollment, consent logging), **BurialSites**, **Catalog**, **Orders/Estimates**,
+**Media** (S3-compatible presigned uploads/downloads), **Payments** (stub provider — see below),
+and **Dispatch/Visits** (visit assignment, checklists, photo reports, QA review). An order now
+runs the whole way: priced, paid, dispatched, photographed, reviewed and accepted. The public site
+renders design direction A («Тихий сад»).
+
+Payments use a stub provider — the YooKassa adapter isn't wired up yet, so no real money moves.
+**Disputes** and **Subscriptions** are unstarted; subscriptions are deliberately scoped to after
+launch (see `docs/plan/PLAN.md`). Login is email OTP only — SMS returns `501` from the API and the
+login form doesn't offer it.
 
 ## Run locally
 
