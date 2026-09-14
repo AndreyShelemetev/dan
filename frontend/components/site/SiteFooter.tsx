@@ -7,6 +7,7 @@ import Link from "next/link";
  * there is no support page to send anyone to, and a mailto is the honest destination.
  */
 const LEGAL_LINKS = [
+  { label: "Оферта", href: "/legal/oferta/" },
   { label: "Конфиденциальность", href: "/legal/privacy/" },
   { label: "Согласие на обработку", href: "/legal/consent/" },
   { label: "Cookie", href: "/legal/cookies/" },
