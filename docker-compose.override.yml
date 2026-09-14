@@ -9,7 +9,10 @@ services:
   # Local stand-in for the production object storage. Dev-only on purpose: production points
   # Storage__* at a real S3-compatible bucket in a Russian region, and no MinIO runs there.
   minio:
-    image: minio/minio:latest
+    # quay.io, not Docker Hub: `docker.io/minio/minio` stopped serving anonymous pulls (401 on
+    # the manifest), which broke `docker compose up` for every CI e2e run and every fresh clone.
+    # MinIO publishes the same images to quay.io, and that registry answers unauthenticated.
+    image: quay.io/minio/minio:latest
     container_name: pamyat-ryadom-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
