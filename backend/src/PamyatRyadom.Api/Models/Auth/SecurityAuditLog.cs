@@ -40,9 +40,16 @@ public static class SecurityAuditEventTypes
     /// question asked during a dispute rather than during development.</summary>
     public const string CatalogChanged = "catalog_changed";
 
+    /// <summary>An admin created a user account outside self-registration (staff or executor).</summary>
+    public const string UserCreated = "user_created";
+
+    /// <summary>An admin activated or deactivated a user account. <see cref="RoleChanged"/> covers
+    /// role changes; this is status only.</summary>
+    public const string UserStatusChanged = "user_status_changed";
+
     public static readonly IReadOnlyCollection<string> All = new[]
     {
         LoginSuccess, LoginFailed, Logout, OtpRequested, SessionRevoked, RoleChanged, MfaEnrolled,
-        MfaVerified, CatalogChanged
+        MfaVerified, CatalogChanged, UserCreated, UserStatusChanged
     };
 }
