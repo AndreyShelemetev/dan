@@ -102,6 +102,10 @@ builder.Services.AddSingleton<ILegalDocumentRegistry, LegalDocumentRegistry>();
 builder.Services.AddSingleton<IMfaService, MfaService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Account administration: the only way to create a staff/executor account outside Development,
+// where DevAccountSeeder does the job instead.
+builder.Services.AddScoped<IAdminUsersService, AdminUsersService>();
+
 // Burial sites: the client's own records, plus family access to them.
 builder.Services.AddScoped<IBurialSiteService, BurialSiteService>();
 
