@@ -10,6 +10,7 @@ const TABS = [
   { href: "/admin/qa", label: "Проверка отчётов", adminOnly: false },
   { href: "/admin/catalog", label: "Пакеты услуг", adminOnly: true },
   { href: "/admin/plans", label: "Подписки", adminOnly: true },
+  { href: "/admin/users", label: "Пользователи", adminOnly: true },
 ] as const;
 
 /**
