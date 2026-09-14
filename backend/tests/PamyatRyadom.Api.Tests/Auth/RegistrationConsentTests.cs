@@ -84,7 +84,7 @@ public sealed class RegistrationConsentTests : AuthIntegrationTest
 
         Assert.Equal(2, accepted.Count);
         Assert.Contains(LegalDocumentTypes.Privacy, accepted);
-        Assert.Contains(LegalDocumentTypes.OfertaClient, accepted);
+        Assert.Contains(LegalDocumentTypes.Consent, accepted);
     }
 
     [Fact]
