@@ -9,7 +9,9 @@ services:
   # Local stand-in for the production object storage. Dev-only on purpose: production points
   # Storage__* at a real S3-compatible bucket in a Russian region, and no MinIO runs there.
   minio:
-    image: minio/minio:latest
+    # quay.io, not Docker Hub: minio/minio was pulled from Docker Hub (pull now fails with
+    # "repository does not exist") — quay.io/minio/minio is MinIO's own registry and current.
+    image: quay.io/minio/minio:latest
     container_name: pamyat-ryadom-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
