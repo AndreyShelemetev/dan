@@ -115,13 +115,17 @@ public sealed class OtpVerifyTests : AuthIntegrationTest
         Assert.NotEqual(default, consent.AcceptedAt);
 
         // Document acceptance is tracked against the versioned rows, not in the consent log.
+        // Versions differ by type now that `oferta_client` is on 2.0 (ADR-002) while the rest are
+        // still 1.0 — the shared check is "a real published version", not "every type agrees".
         var documents = await factory.QueryDbAsync(db => db.LegalDocuments.ToListAsync());
         Assert.All(documents, d =>
         {
-            Assert.Equal("1.0", d.Version);
+            Assert.NotEqual("v0-draft", d.Version);
             Assert.Equal("ru", d.Locale);
             Assert.Equal(LegalDocumentStatuses.Published, d.Status);
         });
+        Assert.Equal("2.0", documents.Single(d => d.Type == LegalDocumentTypes.OfertaClient).Version);
+        Assert.Equal("1.0", documents.Single(d => d.Type == LegalDocumentTypes.Consent).Version);
 
         // One acceptance per required instrument: the policy and the consent are separate under
         // 152-ФЗ, so a single combined row would lose which was shown.
@@ -173,7 +177,9 @@ public sealed class OtpVerifyTests : AuthIntegrationTest
         // required instrument. Signing in again is not a new consent event.
         Assert.Equal(1, await factory.QueryDbAsync(db => db.ConsentLogs.CountAsync()));
         Assert.Equal(2, await factory.QueryDbAsync(db => db.LegalAcceptances.CountAsync()));
-        Assert.Equal(3, await factory.QueryDbAsync(db => db.LegalDocuments.CountAsync()));
+        // Four published documents now: privacy, cookies, consent and oferta_client (ADR-002) —
+        // one more than before the split, though only two of them gate registration.
+        Assert.Equal(4, await factory.QueryDbAsync(db => db.LegalDocuments.CountAsync()));
 
         // A second login is a second session; the first one is left alone.
         Assert.Equal(2, await factory.QueryDbAsync(db => db.AuthSessions.CountAsync(x => x.RevokedAt == null)));
