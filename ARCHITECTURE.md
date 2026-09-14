@@ -202,7 +202,9 @@ no money actually moves.
 Primary way to run everything is Docker Compose. The base `docker-compose.yml` brings up:
 
 - `postgres` — PostgreSQL 17 (alpine), healthcheck via `pg_isready`.
-- `api` — the ASP.NET Core Web API, healthcheck via `GET /api/v1/health`.
+- `api` — the ASP.NET Core Web API, healthcheck via `GET /api/v1/health/ready` (readiness:
+  Postgres reachable, no pending migrations — see below; `GET /api/v1/health` is liveness only
+  and checks neither).
 - `frontend` — the Next.js standalone build.
 - `docker-compose.override.yml` (auto-loaded in dev) adds `adminer` and sets
   `ASPNETCORE_ENVIRONMENT=Development`.
@@ -216,7 +218,9 @@ YooKassa, and S3 credentials that later module tasks wire up.
 **Migrations are not applied on api startup** — deliberately, so a rolling deploy cannot have two
 api instances racing to migrate. Run `bash deploy/migrate.sh` (one-off SDK container on the compose
 network) or `dotnet ef database update` with an explicit connection string after bringing the stack
-up. A fresh volume with no migration applied gives a healthy api and 500s on every data endpoint.
+up. A fresh volume with no migration applied fails the `api` container's readiness healthcheck
+(`GET /api/v1/health/ready` returns 503, `reason: pending_migrations`) instead of looking healthy
+while every data endpoint 500s — see `docs/ops/runbook.md`.
 
 ## 7. Frozen without a dedicated task
 
