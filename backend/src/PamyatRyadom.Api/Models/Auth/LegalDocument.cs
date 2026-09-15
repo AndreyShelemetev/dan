@@ -27,9 +27,13 @@ public static class LegalDocumentTypes
     public const string Cookies = "cookies";
     public const string RefundPolicy = "refund_policy";
 
+    /// <summary>Consent to processing of personal data (152-ФЗ) — a separate instrument from
+    /// <see cref="OfertaClient"/>, the contract for the service itself. See ADR-002.</summary>
+    public const string Consent = "consent";
+
     public static readonly IReadOnlyCollection<string> All = new[]
     {
-        OfertaClient, OfertaExecutor, Privacy, Cookies, RefundPolicy
+        OfertaClient, OfertaExecutor, Privacy, Cookies, RefundPolicy, Consent
     };
 }
 

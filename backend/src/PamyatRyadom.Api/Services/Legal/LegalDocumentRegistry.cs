@@ -41,6 +41,10 @@ public sealed class LegalDocumentRegistry : ILegalDocumentRegistry
     // 2026-08-25: first published set, written for this service's actual processing.
     private static readonly DateTimeOffset FirstPublication = new(2026, 8, 25, 0, 0, 0, TimeSpan.Zero);
 
+    // 2026-09-14: ADR-002 split what had been filed as `oferta_client` v1.0 (its Path was
+    // actually the consent page) into two real instruments — see the definitions below.
+    private static readonly DateTimeOffset SecondPublication = new(2026, 9, 14, 0, 0, 0, TimeSpan.Zero);
+
     public IReadOnlyList<LegalDocumentDefinition> Published { get; } = new[]
     {
         new LegalDocumentDefinition(
@@ -49,18 +53,27 @@ public sealed class LegalDocumentRegistry : ILegalDocumentRegistry
         new LegalDocumentDefinition(
             LegalDocumentTypes.Cookies, "1.0",
             "Политика использования cookie", "/legal/cookies/", FirstPublication),
+        // Replaces `oferta_client` 1.0 as the consent instrument. Past acceptances of
+        // `oferta_client` 1.0 are untouched — a published version is never edited (BR-016), and
+        // those rows still mean exactly what they meant when recorded.
         new LegalDocumentDefinition(
-            LegalDocumentTypes.OfertaClient, "1.0",
-            "Согласие на обработку персональных данных", "/legal/consent/", FirstPublication),
+            LegalDocumentTypes.Consent, "1.0",
+            "Согласие на обработку персональных данных", "/legal/consent/", SecondPublication),
+        // The actual service contract, previously misfiled with the consent's path. Bumped to
+        // 2.0 rather than edited in place, with its own path — see ADR-002.
+        new LegalDocumentDefinition(
+            LegalDocumentTypes.OfertaClient, "2.0",
+            "Публичная оферта", "/legal/oferta/", SecondPublication),
     };
 
     /// <summary>
     /// Both the privacy policy and the consent are required: 152-ФЗ treats them as different
     /// instruments. The policy is what the operator publishes about its processing; the consent
-    /// is the legal ground the person gives. Accepting one is not accepting the other.
+    /// is the legal ground the person gives. Accepting one is not accepting the other. The
+    /// service offer (`OfertaClient`) is a separate contract, not a registration gate.
     /// </summary>
     public IReadOnlyList<LegalDocumentDefinition> RequiredForRegistration =>
-        Published.Where(d => d.Type is LegalDocumentTypes.Privacy or LegalDocumentTypes.OfertaClient).ToList();
+        Published.Where(d => d.Type is LegalDocumentTypes.Privacy or LegalDocumentTypes.Consent).ToList();
 
     public LegalDocumentDefinition? Find(string type) =>
         Published.FirstOrDefault(d => d.Type == type);
