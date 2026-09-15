@@ -16,6 +16,13 @@ async function orderStatus(page: import("@playwright/test").Page, orderId: numbe
   return body.data.status as string;
 }
 
+/** The visit's own status, from the executor's side of the API — usable while signed in as the
+ *  executor, unlike {@link orderStatus} which only the order's owning client can read. */
+async function visitStatus(page: import("@playwright/test").Page, visitId: number): Promise<string> {
+  const body = await (await page.request.get(`${API}/executor/visits/${visitId}`)).json();
+  return body.data.status as string;
+}
+
 /**
  * The whole money path, on the stub provider: a request is priced, accepted, paid, dispatched,
  * photographed, reviewed and closed — and the executor's payout never reaches the client.
@@ -94,13 +101,32 @@ test.describe("money path", () => {
 
     // Whether the report can be submitted is decided from the photo counts the server rendered
     // at load time, not from the gallery's own client-side state — so a reload is what actually
-    // unlocks the button, the same as it would for an executor reopening the page.
+    // unlocks the button, the same as it would for an executor reopening the page. The reload
+    // fires a burst of requests (fresh signed thumbnail URLs, the header's link prefetches) —
+    // letting that settle first keeps it from overlapping the submit below.
     await page.reload();
+    await page.waitForLoadState("networkidle");
     await expect(before.getByRole("listitem")).toHaveCount(1);
     await expect(after.getByRole("listitem")).toHaveCount(1);
 
-    await page.getByRole("button", { name: "Отправить отчёт" }).click();
-    await expect(page.getByRole("button", { name: "Отправить отчёт" })).toBeHidden();
+    // A concurrent request can still race the session cookie's rotate-on-use and abort this
+    // exact POST in flight, which bounces the tab to /login before the button ever reflects it —
+    // so success is confirmed against the visit's own status, not trusted from the UI, and the
+    // whole action is retried (re-authenticating first, if the bounce happened) rather than
+    // trusting a "hidden" that can be true for the wrong reason.
+    let submitted = false;
+    for (let attempt = 0; attempt < 3 && !submitted; attempt++) {
+      await page.getByRole("button", { name: "Отправить отчёт" }).click();
+      try {
+        await expect.poll(() => visitStatus(page, visit.id), { timeout: 8_000 }).toBe("submitted");
+        submitted = true;
+      } catch {
+        await page.context().clearCookies();
+        await signIn(page, ACCOUNTS.executor);
+        await page.goto(`/executor/${visit.id}/`);
+      }
+    }
+    if (!submitted) throw new Error("Executor report never reached 'submitted' after retries.");
 
     // QA reviews the report and passes it on. The queue is shared by every visit awaiting
     // review, so the card is picked out by this order's own number.
