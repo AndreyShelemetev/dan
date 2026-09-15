@@ -28,9 +28,13 @@ export const payments = {
     apiFetch<Payment>(`/orders/${orderId}/payments/latest`, { headers: headers(cookieHeader) }),
 
   /** Asks the provider where the payment stands. Coming back from their page proves only that
-   *  the client returned — never that they paid. */
-  sync: (paymentId: number): Promise<Payment> =>
-    apiFetch<Payment>(`/payments/${paymentId}/sync`, { method: "POST" }),
+   *  the client returned — never that they paid. Takes a cookie header so the order page can
+   *  call it at render time, before the browser has made a single request of its own. */
+  sync: (paymentId: number, cookieHeader?: string): Promise<Payment> =>
+    apiFetch<Payment>(`/payments/${paymentId}/sync`, {
+      method: "POST",
+      headers: headers(cookieHeader),
+    }),
 
   /** Development only: stands in for finishing on the provider's page. */
   devConfirm: (paymentId: number): Promise<Payment> =>
