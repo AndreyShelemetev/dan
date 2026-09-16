@@ -122,7 +122,8 @@ envelope, so a client never has to branch on error format.
 ## 4. Module boundaries
 
 **Identity**, **BurialSites**, **Catalog**, **Orders/Estimates**, **Media**, **Payments** and
-**Dispatch/Visits** exist in code today; Disputes and Subscriptions describe intended boundaries
+**Dispatch/Visits** exist in code today; Reports/Disputes has its client-facing half (opening a
+case, reading its state), while its resolution side and Subscriptions describe intended boundaries
 for the tasks that build them. An order now runs the whole way — placed, priced, paid, dispatched,
 photographed, reviewed and accepted — with one qualification: the payment provider is a stub, so
 no money actually moves.
@@ -178,12 +179,15 @@ no money actually moves.
   `IHostEnvironment`, never by configuration: `StubPaymentProvider` throws if constructed in
   Production, and Production registers a provider that throws on resolve until the YooKassa adapter
   is written — a deployment with no way to take money fails loudly instead of looking healthy.
-- **Reports/Disputes** — the report itself lives in Dispatch (above). An order can be moved to
-  `disputed` today, and the `disputes` table (`Models/Disputes/Dispute.cs`) now holds the case
-  behind that status — who opened it, their stated reason, and (once decided) the resolution type,
-  its text and, for a partial refund, the amount — with exactly one live dispute per order enforced
-  by a partial unique index. What remains here is the service and endpoints that write to it: no
-  code opens a case yet, and there is no resolution path or refund trigger wired up.
+- **Reports/Disputes** *(client side implemented; resolution unstarted)* — the report itself lives
+  in Dispatch (above). `POST /orders/{id}/dispute` moves the order to `disputed` and opens the
+  case behind it in the same call (`Services/Disputes/DisputeService.cs`), and
+  `GET /orders/{id}/dispute` is how the client reads its reason, status and, once decided, the
+  resolution — a dispute only opens from `customer_review` or the post-completion warranty window
+  (BR-012), never while QA still has the report. Exactly one live dispute per order is enforced
+  both in the service and by a partial unique index on the `disputes` table. What remains is the
+  support/admin side: no code resolves a case yet, so there is no resolution path or refund
+  trigger wired up.
 - **Subscriptions** — recurring care plans that generate orders on a schedule, and their
   billing/renewal/cancellation lifecycle.
 - **Audit** — an append-only log of security- and business-relevant events (logins, status

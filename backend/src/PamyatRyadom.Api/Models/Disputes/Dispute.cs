@@ -83,3 +83,31 @@ public static class DisputeResolutionTypes
 
     public static readonly IReadOnlyCollection<string> All = new[] { Rework, PartialRefund, FullRefund, Rejected };
 }
+
+/// <summary>What the client is told a dispute's status and resolution mean. Same reasoning as
+/// <c>OrderStatusPresentation</c>: internal vocabulary stays internal, the client reads a
+/// sentence, not a status string.</summary>
+public static class DisputeStatusPresentation
+{
+    private static readonly Dictionary<string, string> StatusLabels = new()
+    {
+        [DisputeStatuses.Open] = "Обращение зарегистрировано",
+        [DisputeStatuses.InReview] = "Разбираем обращение",
+        [DisputeStatuses.Resolved] = "Решение принято",
+        [DisputeStatuses.Rejected] = "Обращение отклонено",
+    };
+
+    private static readonly Dictionary<string, string> ResolutionLabels = new()
+    {
+        [DisputeResolutionTypes.Rework] = "Работу переделают",
+        [DisputeResolutionTypes.PartialRefund] = "Оформлен частичный возврат",
+        [DisputeResolutionTypes.FullRefund] = "Оформлен полный возврат",
+        [DisputeResolutionTypes.Rejected] = "В удовлетворении отказано",
+    };
+
+    public static string StatusLabel(string status) =>
+        StatusLabels.TryGetValue(status, out var label) ? label : status;
+
+    public static string? ResolutionLabel(string? resolutionType) =>
+        resolutionType is not null && ResolutionLabels.TryGetValue(resolutionType, out var label) ? label : null;
+}

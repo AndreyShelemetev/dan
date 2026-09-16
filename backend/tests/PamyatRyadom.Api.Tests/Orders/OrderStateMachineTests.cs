@@ -52,6 +52,9 @@ public sealed class OrderStateMachineTests
     [InlineData(OrderStatuses.InProgress, OrderStatuses.CustomerReview)]
     [InlineData(OrderStatuses.InProgress, OrderStatuses.Completed)]
     [InlineData(OrderStatuses.QaReview, OrderStatuses.Completed)]
+    // A dispute opens once the client can see the report — not while QA is still reviewing it
+    // (BR-012).
+    [InlineData(OrderStatuses.QaReview, OrderStatuses.Disputed)]
     // A visit cannot start before an executor accepted the assignment (BR-007).
     [InlineData(OrderStatuses.Paid, OrderStatuses.InProgress)]
     [InlineData(OrderStatuses.Assigning, OrderStatuses.InProgress)]

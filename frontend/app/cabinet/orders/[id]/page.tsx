@@ -8,12 +8,14 @@ import { OrderActions } from "@/components/cabinet/OrderActions";
 import { PhotoGallery } from "@/components/cabinet/PhotoGallery";
 import { PaymentPanel } from "@/components/cabinet/PaymentPanel";
 import { ReportPanel } from "@/components/cabinet/ReportPanel";
+import { DisputePanel } from "@/components/cabinet/DisputePanel";
 import { ApiError } from "@/lib/api/client";
 import { formatRub } from "@/lib/api/catalog";
 import { orders } from "@/lib/api/orders";
 import { MEDIA_OWNER, listMedia } from "@/lib/api/media";
 import { payments } from "@/lib/api/payments";
 import { getReport } from "@/lib/api/visits";
+import { getDispute } from "@/lib/api/disputes";
 import { getSessionCookieHeader } from "@/lib/auth/serverCookie";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +55,11 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
     ? await getReport(id, getSessionCookieHeader()).catch(() => null)
     : null;
 
+  // A dispute only exists once the order has been moved to `disputed` — there is no resolution
+  // path yet that would carry it to any other status (D15).
+  const dispute =
+    order.status === "disputed" ? await getDispute(id, getSessionCookieHeader()).catch(() => null) : null;
+
   // Only one version is ever awaiting a decision; the rest are shown for reference.
   const pending = order.estimates.find((e) => e.status === "published");
   const others = order.estimates.filter((e) => e !== pending);
@@ -89,6 +96,8 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
           decidable={order.status === "customer_review"}
         />
       ) : null}
+
+      {dispute ? <DisputePanel dispute={dispute} /> : null}
 
       <Card className="flex flex-col gap-5">
         <h2 className="font-display text-xl font-normal text-ink-1">О заказе</h2>
