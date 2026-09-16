@@ -178,9 +178,12 @@ no money actually moves.
   `IHostEnvironment`, never by configuration: `StubPaymentProvider` throws if constructed in
   Production, and Production registers a provider that throws on resolve until the YooKassa adapter
   is written — a deployment with no way to take money fails loudly instead of looking healthy.
-- **Reports/Disputes** — the report itself lives in Dispatch (above). What remains here is the
-  dispute flow when a client is unsatisfied: an order can be moved to `disputed` today, but there
-  is no case record, no resolution path and no refund trigger behind it yet.
+- **Reports/Disputes** — the report itself lives in Dispatch (above). An order can be moved to
+  `disputed` today, and the `disputes` table (`Models/Disputes/Dispute.cs`) now holds the case
+  behind that status — who opened it, their stated reason, and (once decided) the resolution type,
+  its text and, for a partial refund, the amount — with exactly one live dispute per order enforced
+  by a partial unique index. What remains here is the service and endpoints that write to it: no
+  code opens a case yet, and there is no resolution path or refund trigger wired up.
 - **Subscriptions** — recurring care plans that generate orders on a schedule, and their
   billing/renewal/cancellation lifecycle.
 - **Audit** — an append-only log of security- and business-relevant events (logins, status
