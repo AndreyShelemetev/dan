@@ -125,8 +125,8 @@ envelope, so a client never has to branch on error format.
 **Dispatch/Visits** exist in code today; Reports/Disputes has its client-facing half (opening a
 case, reading its state), while its resolution side and Subscriptions describe intended boundaries
 for the tasks that build them. An order now runs the whole way — placed, priced, paid, dispatched,
-photographed, reviewed and accepted — with one qualification: the payment provider is a stub, so
-no money actually moves.
+photographed, reviewed and accepted — with one qualification: Development still runs on the stub
+provider, so no money moves there; Production is wired up to take real money (§4 Payments).
 
 - **Identity** *(implemented)* — accounts, roles, email OTP login (the API's request shape
   accepts an `sms` channel too, but it returns `501` — no SMS provider is wired up, and the login
@@ -169,16 +169,19 @@ no money actually moves.
   Order photos are readable by the staff who need them to work (dispatcher, qa, support, admin,
   superadmin) and writable only by the client who owns the order, while it is still editable.
   Photos are permanent private records, not short-retention outputs — nothing here auto-expires.
-- **Payments** *(infrastructure implemented, provider stubbed)* — `IPaymentProvider` is the whole
-  contract: create, read, refund. There is no "mark as paid", by design — a payment becomes paid
-  because the provider was asked directly, so a callback can only trigger the asking and can never
-  assert an outcome. Idempotency is a unique `payments.order_ref` index plus a stored
-  `Idempotence-Key`, which makes a retry the same charge rather than a second one. Refunds are part
-  of the interface rather than a later addition; a full refund moves the order to `refunded`, a
-  partial one leaves it alone because the work still happened. The provider is selected by
-  `IHostEnvironment`, never by configuration: `StubPaymentProvider` throws if constructed in
-  Production, and Production registers a provider that throws on resolve until the YooKassa adapter
-  is written — a deployment with no way to take money fails loudly instead of looking healthy.
+- **Payments** *(implemented)* — `IPaymentProvider` is the whole contract: create, read, refund.
+  There is no "mark as paid", by design — a payment becomes paid because the provider was asked
+  directly, so a callback can only trigger the asking and can never assert an outcome. Idempotency
+  is a unique `payments.order_ref` index plus a stored `Idempotence-Key`, which makes a retry the
+  same charge rather than a second one. Refunds are part of the interface rather than a later
+  addition; a full refund moves the order to `refunded`, a partial one leaves it alone because the
+  work still happened. The provider is selected by `IHostEnvironment`, never by configuration:
+  `StubPaymentProvider` throws if constructed in Production; Production registers
+  `YooKassaPaymentProvider` (`api.yookassa.ru/v3`, redirect-confirmation) instead, and `Program.cs`
+  checks `YOOKASSA_SHOP_ID` / `YOOKASSA_SECRET_KEY` / `YOOKASSA_RETURN_URL` eagerly at startup — a
+  deployment with no way to take money fails loudly at boot instead of looking healthy until the
+  first payment. What remains is operational, not code: registering the shop with YooKassa and
+  running a live smoke payment (П1 in `docs/plan/PLAN.md`).
 - **Reports/Disputes** *(client side implemented; resolution unstarted)* — the report itself lives
   in Dispatch (above). `POST /orders/{id}/dispute` moves the order to `disputed` and opens the
   case behind it in the same call (`Services/Disputes/DisputeService.cs`), and
