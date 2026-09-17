@@ -5,7 +5,9 @@ const API = process.env.E2E_API_URL ?? "http://localhost:5100/api/v1";
 /** The development accounts, and the name the header shows for each. */
 export const ACCOUNTS = {
   client: { email: "client@pamyat.test", label: "Тестовый клиент" },
+  executor: { email: "executor@pamyat.test", label: "Тестовый исполнитель" },
   dispatcher: { email: "dispatcher@pamyat.test", label: "Тестовый диспетчер" },
+  qa: { email: "qa@pamyat.test", label: "Тестовый QA" },
   admin: { email: "admin@pamyat.test", label: "Тестовый администратор" },
 } as const;
 
