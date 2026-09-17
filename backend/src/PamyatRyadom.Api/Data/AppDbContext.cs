@@ -6,6 +6,7 @@ using PamyatRyadom.Api.Models.Catalog;
 using PamyatRyadom.Api.Models.Media;
 using PamyatRyadom.Api.Models.Orders;
 using PamyatRyadom.Api.Models.Dispatch;
+using PamyatRyadom.Api.Models.Disputes;
 using PamyatRyadom.Api.Models.Payments;
 
 namespace PamyatRyadom.Api.Data;
@@ -62,6 +63,9 @@ public sealed class AppDbContext : DbContext
     // Dispatch: the visit and the photo report that comes back from it — the actual deliverable.
     public DbSet<Visit> Visits => Set<Visit>();
     public DbSet<VisitChecklistItem> VisitChecklistItems => Set<VisitChecklistItem>();
+
+    // Disputes: the case behind an order's `disputed` status.
+    public DbSet<Dispute> Disputes => Set<Dispute>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
