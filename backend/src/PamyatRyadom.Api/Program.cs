@@ -127,16 +127,30 @@ builder.Services.AddScoped<IEstimateService, EstimateService>();
 
 // Payments. The provider is chosen by environment, not by configuration: StubPaymentProvider
 // reports payments that never happened, so nothing in appsettings may be able to put it in front
-// of a real customer. It throws in Production as a second lock on the same door.
+// of a real customer.
 builder.Services.Configure<PaymentOptions>(builder.Configuration.GetSection(PaymentOptions.SectionName));
+builder.Services.Configure<YooKassaOptions>(builder.Configuration.GetSection(YooKassaOptions.SectionName));
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 if (builder.Environment.IsProduction())
 {
-    // No YooKassa adapter yet. Failing at startup is the honest outcome — a production build that
-    // silently had no way to take money would look healthy right up until a client tried to pay.
-    builder.Services.AddScoped<IPaymentProvider>(_ => throw new InvalidOperationException(
-        "No payment provider is configured for Production. Wire up the YooKassa adapter before deploying."));
+    // Checked here, eagerly, rather than left to YooKassaPaymentProvider's own constructor check:
+    // that one only runs the first time something resolves IPaymentProvider, which is the first
+    // payment a client tries to make. A build with no way to take money must fail at startup, not
+    // look healthy until then. ReturnUrlBase is read raw (not through IOptions) because the bound
+    // options type carries a `http://localhost:3100` default that would otherwise hide a missing
+    // YOOKASSA_RETURN_URL.
+    var shopId = builder.Configuration[$"{YooKassaOptions.SectionName}:ShopId"];
+    var secretKey = builder.Configuration[$"{YooKassaOptions.SectionName}:SecretKey"];
+    var returnUrlBase = builder.Configuration[$"{PaymentOptions.SectionName}:ReturnUrlBase"];
+    if (string.IsNullOrWhiteSpace(shopId) || string.IsNullOrWhiteSpace(secretKey) || string.IsNullOrWhiteSpace(returnUrlBase))
+    {
+        throw new InvalidOperationException(
+            "YooKassa is not configured for Production: YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY and " +
+            "YOOKASSA_RETURN_URL are all required.");
+    }
+
+    builder.Services.AddHttpClient<IPaymentProvider, YooKassaPaymentProvider>();
 }
 else
 {

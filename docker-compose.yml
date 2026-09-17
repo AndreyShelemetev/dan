@@ -49,6 +49,11 @@ services:
       Storage__SecretKey: ${S3_SECRET_KEY:-change_me_minio}
       Storage__Region: ${S3_REGION:-ru-central1}
       Storage__UsePathStyle: ${S3_USE_PATH_STYLE:-true}
+      # YooKassa. Required in Production — the api refuses to start without all three (Program.cs);
+      # Development registers the stub provider instead and never reads them.
+      YooKassa__ShopId: ${YOOKASSA_SHOP_ID:-}
+      YooKassa__SecretKey: ${YOOKASSA_SECRET_KEY:-}
+      Payments__ReturnUrlBase: ${YOOKASSA_RETURN_URL:-http://localhost:3100}
     ports:
       - "${API_PORT}:8080"
     volumes:
