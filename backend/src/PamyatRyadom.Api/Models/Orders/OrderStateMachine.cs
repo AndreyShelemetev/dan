@@ -69,10 +69,11 @@ public static class OrderStateMachine
         },
 
         // QA sends work back rather than publishing it. There is no path from here straight to
-        // the client (BR-010).
+        // the client (BR-010) — and no dispute either, since the client cannot see the report yet
+        // to have an opinion about it.
         [OrderStatuses.QaReview] = new[]
         {
-            OrderStatuses.InProgress, OrderStatuses.CustomerReview, OrderStatuses.Disputed,
+            OrderStatuses.InProgress, OrderStatuses.CustomerReview,
         },
 
         [OrderStatuses.CustomerReview] = new[] { OrderStatuses.Completed, OrderStatuses.Disputed },

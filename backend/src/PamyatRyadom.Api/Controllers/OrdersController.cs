@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PamyatRyadom.Api.Dtos.Common;
 using PamyatRyadom.Api.Dtos.Dispatch;
+using PamyatRyadom.Api.Dtos.Disputes;
 using PamyatRyadom.Api.Dtos.Orders;
 using PamyatRyadom.Api.Services.Auth;
 using PamyatRyadom.Api.Services.Common;
+using PamyatRyadom.Api.Services.Disputes;
 using PamyatRyadom.Api.Services.Orders;
 
 namespace PamyatRyadom.Api.Controllers;
@@ -20,11 +22,13 @@ public sealed class OrdersController : AuthorizedControllerBase
 {
     private readonly IOrderService _orders;
     private readonly Services.Dispatch.IVisitService _visits;
+    private readonly IDisputeService _disputes;
 
-    public OrdersController(IOrderService orders, Services.Dispatch.IVisitService visits)
+    public OrdersController(IOrderService orders, Services.Dispatch.IVisitService visits, IDisputeService disputes)
     {
         _orders = orders;
         _visits = visits;
+        _disputes = disputes;
     }
 
     [HttpGet]
@@ -74,11 +78,18 @@ public sealed class OrdersController : AuthorizedControllerBase
         Envelope(await _orders.AcceptWorkAsync(CurrentUserId, id, ct));
 
     /// <summary>The client is not satisfied. A reason is required: a dispute with no statement of
-    /// what is wrong cannot be resolved, only argued about.</summary>
+    /// what is wrong cannot be resolved, only argued about. Moves the order to `disputed` and
+    /// opens the case behind it in the same call (D13/D14).</summary>
     [HttpPost("{id:long}/dispute")]
-    public async Task<ActionResult<ApiResponse<OrderDto>>> Dispute(
+    public async Task<ActionResult<ApiResponse<DisputeDto>>> Dispute(
         long id, [FromBody] CancelOrderDto dto, CancellationToken ct) =>
-        Envelope(await _orders.DisputeAsync(CurrentUserId, id, dto.Reason, ct));
+        Envelope(await _disputes.OpenAsync(CurrentUserId, id, dto.Reason, ct));
+
+    /// <summary>The client's own dispute for this order — reason, status and, once decided, the
+    /// resolution. 404 if this order has never had one.</summary>
+    [HttpGet("{id:long}/dispute")]
+    public async Task<ActionResult<ApiResponse<DisputeDto>>> GetDispute(long id, CancellationToken ct) =>
+        Envelope(await _disputes.GetForClientAsync(CurrentUserId, id, ct));
 
     private ActionResult<ApiResponse<T>> Envelope<T>(ServiceResult<T> result) =>
         result.Succeeded && result.Data is not null

@@ -26,9 +26,6 @@ public interface IOrderService
     /// <summary>The client accepts the work they have been shown. Closes the order.</summary>
     Task<ServiceResult<OrderDto>> AcceptWorkAsync(long userId, long orderId, CancellationToken ct = default);
 
-    /// <summary>The client is not satisfied with the report. A reason is required.</summary>
-    Task<ServiceResult<OrderDto>> DisputeAsync(long userId, long orderId, string? reason, CancellationToken ct = default);
-
     /// <summary>Moves an order between statuses through the state machine, recording who and why.
     /// The single entry point for a status change — see <see cref="OrderStateMachine"/>.</summary>
     Task<ServiceResult<OrderDto>> TransitionAsync(
@@ -323,28 +320,6 @@ public sealed class OrderService : IOrderService
         }
 
         var failed = Move(order, OrderStatuses.Completed, userId, null, "customer_accepted");
-        if (failed is not null) return failed;
-
-        await _db.SaveChangesAsync(ct);
-        return ServiceResult<OrderDto>.Ok(MapOrder(order));
-    }
-
-    public async Task<ServiceResult<OrderDto>> DisputeAsync(
-        long userId, long orderId, string? reason, CancellationToken ct = default)
-    {
-        var order = await LoadAsync(orderId, ct);
-        if (order is null || order.CustomerUserId != userId)
-        {
-            return ServiceResult<OrderDto>.NotFound("Заказ не найден.");
-        }
-
-        if (string.IsNullOrWhiteSpace(reason))
-        {
-            // A dispute with no statement of what is wrong cannot be resolved, only argued about.
-            return ServiceResult<OrderDto>.Validation("Опишите, что не так — без этого спор не разобрать.");
-        }
-
-        var failed = Move(order, OrderStatuses.Disputed, userId, null, reason.Trim());
         if (failed is not null) return failed;
 
         await _db.SaveChangesAsync(ct);

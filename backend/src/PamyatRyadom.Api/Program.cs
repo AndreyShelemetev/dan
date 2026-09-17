@@ -13,6 +13,7 @@ using PamyatRyadom.Api.Services.Dev;
 using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
 using PamyatRyadom.Api.Services.Dispatch;
+using PamyatRyadom.Api.Services.Disputes;
 using PamyatRyadom.Api.Services.Orders;
 using PamyatRyadom.Api.Services.Payments;
 
@@ -146,6 +147,9 @@ else
 // Dispatch: the visit and the photo report. The report is the deliverable, so QA sits between
 // an executor filing it and a client seeing it.
 builder.Services.AddScoped<IVisitService, VisitService>();
+
+// Disputes: the case behind an order's `disputed` status.
+builder.Services.AddScoped<IDisputeService, DisputeService>();
 
 if (builder.Environment.IsDevelopment())
 {

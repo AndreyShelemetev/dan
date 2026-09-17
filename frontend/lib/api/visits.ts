@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import type { Dispute } from "./disputes";
 
 export interface ChecklistItem {
   key: string;
@@ -58,8 +59,8 @@ export const orderActions = {
   acceptWork: (orderId: number): Promise<unknown> =>
     apiFetch(`/orders/${orderId}/acceptance`, { method: "POST" }),
 
-  dispute: (orderId: number, reason: string): Promise<unknown> =>
-    apiFetch(`/orders/${orderId}/dispute`, { method: "POST", body: { reason } }),
+  dispute: (orderId: number, reason: string): Promise<Dispute> =>
+    apiFetch<Dispute>(`/orders/${orderId}/dispute`, { method: "POST", body: { reason } }),
 };
 
 export const executorVisits = {
