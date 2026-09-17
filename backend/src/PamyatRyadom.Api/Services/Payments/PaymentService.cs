@@ -379,3 +379,17 @@ public sealed class PaymentOptions
     /// there proves the client returned, never that they paid.</summary>
     public string ReturnUrlBase { get; set; } = "http://localhost:3100";
 }
+
+/// <summary>Shop credentials for <see cref="YooKassaPaymentProvider"/>. Read from configuration
+/// only — <c>YOOKASSA_SHOP_ID</c> / <c>YOOKASSA_SECRET_KEY</c>, never hard-coded, never logged.</summary>
+public sealed class YooKassaOptions
+{
+    public const string SectionName = "YooKassa";
+
+    public string ShopId { get; set; } = string.Empty;
+    public string SecretKey { get; set; } = string.Empty;
+
+    /// <summary>Overridable only so a test can point this at a fake handler instead of the real
+    /// API — production has exactly one correct value and never needs to set this.</summary>
+    public string ApiBaseUrl { get; set; } = "https://api.yookassa.ru/v3/";
+}
