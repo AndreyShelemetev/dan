@@ -13,7 +13,7 @@ import { ApiError } from "@/lib/api/client";
 import { formatRub } from "@/lib/api/catalog";
 import { orders } from "@/lib/api/orders";
 import { MEDIA_OWNER, listMedia } from "@/lib/api/media";
-import { payments } from "@/lib/api/payments";
+import { payments, type Payment } from "@/lib/api/payments";
 import { getReport } from "@/lib/api/visits";
 import { getDispute } from "@/lib/api/disputes";
 import { getSessionCookieHeader } from "@/lib/auth/serverCookie";
@@ -46,10 +46,18 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   // failure, so neither is allowed to take the page down with it.
   const accepted = order.estimates.find((e) => e.status === "accepted");
 
-  const payment =
-    order.status === "awaiting_payment"
-      ? await payments.latest(id, getSessionCookieHeader()).catch(() => null)
-      : null;
+  // The client may have just been sent back from the provider's page — that proves only that
+  // they returned, never that they paid (BR-007). While an attempt is still live, re-read it
+  // from the provider on every load instead of trusting whatever we last stored.
+  let payment: Payment | null = null;
+  if (order.status === "awaiting_payment") {
+    payment = await payments.latest(id, getSessionCookieHeader()).catch(() => null);
+    if (payment?.isActive) {
+      payment = await payments
+        .sync(payment.id, getSessionCookieHeader())
+        .catch(() => payment);
+    }
+  }
 
   const report = ["customer_review", "completed", "disputed"].includes(order.status)
     ? await getReport(id, getSessionCookieHeader()).catch(() => null)
