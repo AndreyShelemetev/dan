@@ -99,16 +99,6 @@ test.describe("money path", () => {
     await after.locator("input[type=file]").setInputFiles(PIXEL_PNG);
     await expect(after.getByRole("listitem")).toHaveCount(1, { timeout: 30_000 });
 
-    // Whether the report can be submitted is decided from the photo counts the server rendered
-    // at load time, not from the gallery's own client-side state — so a reload is what actually
-    // unlocks the button, the same as it would for an executor reopening the page. The reload
-    // fires a burst of requests (fresh signed thumbnail URLs, the header's link prefetches) —
-    // letting that settle first keeps it from overlapping the submit below.
-    await page.reload();
-    await page.waitForLoadState("networkidle");
-    await expect(before.getByRole("listitem")).toHaveCount(1);
-    await expect(after.getByRole("listitem")).toHaveCount(1);
-
     // A concurrent request can still race the session cookie's rotate-on-use and abort this
     // exact POST in flight, which bounces the tab to /login before the button ever reflects it —
     // so success is confirmed against the visit's own status, not trusted from the UI, and the

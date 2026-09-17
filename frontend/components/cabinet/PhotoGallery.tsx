@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ApiError } from "@/lib/api/client";
@@ -29,6 +29,7 @@ export function PhotoGallery({
   title = "Фотографии",
   hint = "Снимки видны только вам и тем, кого вы пригласили. Ссылки на них временные, а публичного адреса у файлов нет.",
   emptyHint,
+  onCountChange,
 }: {
   /** Id of the owning record — a burial site or an order, per `ownerType`. */
   siteId: number;
@@ -41,10 +42,23 @@ export function PhotoGallery({
   title?: string;
   hint?: string;
   emptyHint?: string;
+  /** The gallery owns its own upload/delete state, so a parent that gates something on "is
+   *  there a photo yet" (the visit report's submit button) has no other way to find out — its
+   *  own copy of the count is whatever the page was rendered with, stale the moment an upload
+   *  finishes. Called on mount and after every change. */
+  onCountChange?: (count: number) => void;
 }) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onCountChange?.(photos.length);
+    // onCountChange is passed fresh on every render by the callers that use it; keying the
+    // effect on it too would fire on every keystroke elsewhere on the page instead of only when
+    // the photo count actually changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos.length]);
 
   async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);

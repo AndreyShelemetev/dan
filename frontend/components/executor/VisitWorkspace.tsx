@@ -53,6 +53,12 @@ export function VisitWorkspace({
   const [note, setNote] = useState(visit.executorNote ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // PhotoGallery manages uploads itself, so these mirror its counts via onCountChange rather
+  // than reading beforePhotos/afterPhotos.length directly — those are only what the page was
+  // rendered with, and stay stale until the next full reload otherwise, leaving "Отправить
+  // отчёт" disabled right after the photos it needs are already uploaded.
+  const [beforeCount, setBeforeCount] = useState(beforePhotos.length);
+  const [afterCount, setAfterCount] = useState(afterPhotos.length);
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -71,7 +77,7 @@ export function VisitWorkspace({
     (item) => NEEDS_NOTE.has(answers[item.key]?.result ?? "") && !answers[item.key]?.note.trim(),
   );
 
-  const canSubmit = !missingNote && beforePhotos.length > 0 && afterPhotos.length > 0;
+  const canSubmit = !missingNote && beforeCount > 0 && afterCount > 0;
   const working = visit.status === "in_progress" || visit.status === "rework";
 
   return (
@@ -168,6 +174,7 @@ export function VisitWorkspace({
             title="Фотографии «до»"
             hint="Снимите участок до работ. Эти кадры клиент увидит рядом с «после» — снимайте так, чтобы их можно было сравнить."
             emptyHint="Без снимка «до» отчёт не примут."
+            onCountChange={setBeforeCount}
           />
 
           <PhotoGallery
@@ -179,6 +186,7 @@ export function VisitWorkspace({
             title="Фотографии «после»"
             hint="Тот же ракурс, что и «до». Сравнение — это и есть результат, за который платит клиент."
             emptyHint="Без снимка «после» отчёт не примут."
+            onCountChange={setAfterCount}
           />
 
           <Card as="section" aria-labelledby="checklist-heading" className="flex flex-col gap-5">
