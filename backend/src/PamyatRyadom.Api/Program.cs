@@ -14,6 +14,7 @@ using PamyatRyadom.Api.Services.Legal;
 using PamyatRyadom.Api.Services.Media;
 using PamyatRyadom.Api.Services.Dispatch;
 using PamyatRyadom.Api.Services.Disputes;
+using PamyatRyadom.Api.Services.Notifications;
 using PamyatRyadom.Api.Services.Orders;
 using PamyatRyadom.Api.Services.Payments;
 
@@ -150,6 +151,12 @@ builder.Services.AddScoped<IVisitService, VisitService>();
 
 // Disputes: the case behind an order's `disputed` status.
 builder.Services.AddScoped<IDisputeService, DisputeService>();
+
+// Notifications: transactional email on top of IEmailSender. No business event calls it yet —
+// the events themselves (order/dispute) are wired up by later tasks against this same interface.
+builder.Services.Configure<NotificationOptions>(builder.Configuration.GetSection(NotificationOptions.SectionName));
+builder.Services.AddSingleton<INotificationTemplateCatalog, NotificationTemplateCatalog>();
+builder.Services.AddSingleton<INotificationService, NotificationService>();
 
 if (builder.Environment.IsDevelopment())
 {
