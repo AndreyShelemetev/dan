@@ -3,6 +3,7 @@ using PamyatRyadom.Api.Data;
 using PamyatRyadom.Api.Dtos.Orders;
 using PamyatRyadom.Api.Models.Orders;
 using PamyatRyadom.Api.Services.Common;
+using PamyatRyadom.Api.Services.Notifications;
 
 namespace PamyatRyadom.Api.Services.Orders;
 
@@ -26,12 +27,15 @@ public sealed class EstimateService : IEstimateService
 {
     private readonly AppDbContext _db;
     private readonly IOrderService _orders;
+    private readonly INotificationService _notifications;
     private readonly ILogger<EstimateService> _logger;
 
-    public EstimateService(AppDbContext db, IOrderService orders, ILogger<EstimateService> logger)
+    public EstimateService(
+        AppDbContext db, IOrderService orders, INotificationService notifications, ILogger<EstimateService> logger)
     {
         _db = db;
         _orders = orders;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -215,6 +219,21 @@ public sealed class EstimateService : IEstimateService
         }
 
         _logger.LogInformation("Estimate v{Version} published on order {Number}", version, order.Number);
+
+        var clientEmail = await NotificationRecipientResolver.ResolveEmailAsync(_db, order.CustomerUserId, ct);
+        if (clientEmail is not null)
+        {
+            await _notifications.SendAsync(
+                NotificationEventTypes.EstimatePublished,
+                clientEmail,
+                NotificationRecipientRoles.Client,
+                new Dictionary<string, string>
+                {
+                    ["orderNumber"] = order.Number,
+                    ["orderPath"] = $"/cabinet/orders/{order.Id}",
+                },
+                ct);
+        }
 
         var reloaded = await LoadAsync(orderId, ct);
         return ServiceResult<OrderDto>.Ok(MapForStaff(reloaded!));
