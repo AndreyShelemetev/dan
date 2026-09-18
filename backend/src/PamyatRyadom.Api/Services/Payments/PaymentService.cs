@@ -5,6 +5,7 @@ using PamyatRyadom.Api.Dtos.Payments;
 using PamyatRyadom.Api.Models.Orders;
 using PamyatRyadom.Api.Models.Payments;
 using PamyatRyadom.Api.Services.Common;
+using PamyatRyadom.Api.Services.Notifications;
 using PamyatRyadom.Api.Services.Orders;
 
 namespace PamyatRyadom.Api.Services.Payments;
@@ -42,6 +43,7 @@ public sealed class PaymentService : IPaymentService
     private readonly AppDbContext _db;
     private readonly IPaymentProvider _provider;
     private readonly IOrderService _orders;
+    private readonly INotificationService _notifications;
     private readonly ILogger<PaymentService> _logger;
     private readonly PaymentOptions _options;
 
@@ -49,12 +51,14 @@ public sealed class PaymentService : IPaymentService
         AppDbContext db,
         IPaymentProvider provider,
         IOrderService orders,
+        INotificationService notifications,
         Microsoft.Extensions.Options.IOptions<PaymentOptions> options,
         ILogger<PaymentService> logger)
     {
         _db = db;
         _provider = provider;
         _orders = orders;
+        _notifications = notifications;
         _options = options.Value;
         _logger = logger;
     }
@@ -340,6 +344,31 @@ public sealed class PaymentService : IPaymentService
                 // The money is real either way. Loud, because it needs a human.
                 _logger.LogError("Payment {PaymentId} succeeded but order {OrderId} would not move to paid",
                     payment.Id, payment.OrderId);
+            }
+            else
+            {
+                var order = await _db.Orders
+                    .Where(o => o.Id == payment.OrderId)
+                    .Select(o => new { o.Number, o.CustomerUserId })
+                    .FirstOrDefaultAsync(ct);
+
+                if (order is not null)
+                {
+                    var clientEmail = await NotificationRecipientResolver.ResolveEmailAsync(_db, order.CustomerUserId, ct);
+                    if (clientEmail is not null)
+                    {
+                        await _notifications.SendAsync(
+                            NotificationEventTypes.PaymentReceived,
+                            clientEmail,
+                            NotificationRecipientRoles.Client,
+                            new Dictionary<string, string>
+                            {
+                                ["orderNumber"] = order.Number,
+                                ["orderPath"] = $"/cabinet/orders/{payment.OrderId}",
+                            },
+                            ct);
+                    }
+                }
             }
         }
     }

@@ -7,6 +7,7 @@ using PamyatRyadom.Api.Models.Dispatch;
 using PamyatRyadom.Api.Models.Media;
 using PamyatRyadom.Api.Models.Orders;
 using PamyatRyadom.Api.Services.Common;
+using PamyatRyadom.Api.Services.Notifications;
 using PamyatRyadom.Api.Services.Orders;
 
 namespace PamyatRyadom.Api.Services.Dispatch;
@@ -45,6 +46,7 @@ public sealed class VisitService : IVisitService
 {
     private readonly AppDbContext _db;
     private readonly IOrderService _orders;
+    private readonly INotificationService _notifications;
     private readonly ILogger<VisitService> _logger;
 
     /// <summary>The minimum a report must carry before QA will even look: the place as found and
@@ -52,10 +54,12 @@ public sealed class VisitService : IVisitService
     private const int MinBeforePhotos = 1;
     private const int MinAfterPhotos = 1;
 
-    public VisitService(AppDbContext db, IOrderService orders, ILogger<VisitService> logger)
+    public VisitService(
+        AppDbContext db, IOrderService orders, INotificationService notifications, ILogger<VisitService> logger)
     {
         _db = db;
         _orders = orders;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -128,6 +132,21 @@ public sealed class VisitService : IVisitService
 
         _logger.LogInformation("Visit {VisitId} offered to executor {ExecutorId} for order {OrderId}",
             visit.Id, dto.ExecutorUserId, orderId);
+
+        var executorEmail = await NotificationRecipientResolver.ResolveEmailAsync(_db, dto.ExecutorUserId, ct);
+        if (executorEmail is not null)
+        {
+            await _notifications.SendAsync(
+                NotificationEventTypes.VisitAssigned,
+                executorEmail,
+                NotificationRecipientRoles.Executor,
+                new Dictionary<string, string>
+                {
+                    ["orderNumber"] = order.Number,
+                    ["visitPath"] = $"/executor/{visit.Id}",
+                },
+                ct);
+        }
 
         return ServiceResult<VisitDto>.Created(await MapAsync(visit.Id, ct));
     }
@@ -346,6 +365,29 @@ public sealed class VisitService : IVisitService
         var moved = await _orders.TransitionAsync(
             visit.OrderId, OrderStatuses.CustomerReview, actorId, null, "qa_approved", ct);
         if (!moved.Succeeded) return Fail(moved);
+
+        var order = await _db.Orders
+            .Where(o => o.Id == visit.OrderId)
+            .Select(o => new { o.Number, o.CustomerUserId })
+            .FirstOrDefaultAsync(ct);
+
+        if (order is not null)
+        {
+            var clientEmail = await NotificationRecipientResolver.ResolveEmailAsync(_db, order.CustomerUserId, ct);
+            if (clientEmail is not null)
+            {
+                await _notifications.SendAsync(
+                    NotificationEventTypes.ReportReady,
+                    clientEmail,
+                    NotificationRecipientRoles.Client,
+                    new Dictionary<string, string>
+                    {
+                        ["orderNumber"] = order.Number,
+                        ["orderPath"] = $"/cabinet/orders/{visit.OrderId}",
+                    },
+                    ct);
+            }
+        }
 
         return ServiceResult<VisitDto>.Ok(await MapAsync(visitId, ct));
     }

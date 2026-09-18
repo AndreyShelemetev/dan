@@ -124,9 +124,9 @@ envelope, so a client never has to branch on error format.
 **Identity**, **BurialSites**, **Catalog**, **Orders/Estimates**, **Media**, **Payments** and
 **Dispatch/Visits** exist in code today; Reports/Disputes has its client-facing half (opening a
 case, reading its state), while its resolution side and Subscriptions describe intended boundaries
-for the tasks that build them. **Notifications** has its delivery machinery (`NotificationService`
-on top of `IEmailSender`) but no business event calls it yet — the template catalog is empty until
-a later task registers one per event. An order now runs the whole way — placed, priced, paid,
+for the tasks that build them. **Notifications** now fires on the order/dispatch events
+(estimate published, payment received, report ready, visit assigned) — the dispute events (case
+opened, resolved) are not wired yet. An order now runs the whole way — placed, priced, paid,
 dispatched, photographed, reviewed and accepted — with one qualification: the payment provider is
 a stub, so no money actually moves.
 
@@ -190,13 +190,19 @@ a stub, so no money actually moves.
   both in the service and by a partial unique index on the `disputes` table. What remains is the
   support/admin side: no code resolves a case yet, so there is no resolution path or refund
   trigger wired up.
-- **Notifications** *(delivery machinery implemented, no business event wired yet)* —
+- **Notifications** *(order/dispatch events wired; dispute events not yet)* —
   `NotificationService` composes a Russian subject/HTML/text triple from a template registered in
-  `INotificationTemplateCatalog` (currently empty; a later task adds an entry per business event)
-  and sends it through the same `IEmailSender` the Identity module uses for login codes. A
-  delivery failure is caught and logged by event type and a hashed recipient key, never the
-  address, so a mail outage never rolls back the order/payment/dispute action that triggered it.
-  Sending a template to a recipient role it was not written for throws rather than mis-sending.
+  `INotificationTemplateCatalog` and sends it through the same `IEmailSender` the Identity module
+  uses for login codes. Four templates are registered so far — estimate published and payment
+  received (`EstimateService`/`PaymentService`, client), report ready (`VisitService.ApproveAsync`,
+  client), visit assigned (`VisitService.AssignAsync`, executor) — called only once the write that
+  triggered them has committed (and, for payment, only the first time a payment settles —
+  `PaymentService.SyncAsync` is called on every page return and provider retry). A delivery failure
+  is caught and logged by event type and a hashed recipient key, never the address, so a mail
+  outage never rolls back the order/payment action that triggered it. Sending a template to a
+  recipient role it was not written for throws rather than mis-sending, and none of the
+  client-facing templates are ever built from `VisitDto`'s staff-only fields (`PayoutRub` among
+  them) — only from data equivalent to the client's own `VisitReportDto`.
 - **Subscriptions** — recurring care plans that generate orders on a schedule, and their
   billing/renewal/cancellation lifecycle.
 - **Audit** — an append-only log of security- and business-relevant events (logins, status
